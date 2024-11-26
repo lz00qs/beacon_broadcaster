@@ -6,13 +6,16 @@ enum BluetoothState {
   unauthorized,
   ready,
   beaconing,
-  on,
   off,
 }
 
 class BeaconBroadcaster {
   Future<String?> getPlatformVersion() {
     return BeaconBroadcasterPlatform.instance.getPlatformVersion();
+  }
+
+  Future<void> checkBluetoothState() {
+    return BeaconBroadcasterPlatform.instance.checkBluetoothState();
   }
 
   Stream<BluetoothState> get bluetoothState {

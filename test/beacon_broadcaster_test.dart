@@ -15,6 +15,9 @@ class MockBeaconBroadcasterPlatform
 
   @override
   Stream<String> get nativeLog => const Stream.empty();
+
+  @override
+  Future<void> checkBluetoothState() => Future.value();
 }
 
 void main() {

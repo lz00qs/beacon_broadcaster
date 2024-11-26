@@ -26,6 +26,11 @@ class ChannelsBeaconBroadcaster extends BeaconBroadcasterPlatform {
   }
 
   @override
+  Future<void> checkBluetoothState() {
+    return methodChannel.invokeMethod<void>('checkBluetoothState');
+  }
+
+  @override
   Stream<BluetoothState> get bluetoothState {
     return bluetoothStateChannel.receiveBroadcastStream().map((event) {
       try {

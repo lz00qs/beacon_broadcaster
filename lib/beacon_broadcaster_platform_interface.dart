@@ -35,4 +35,8 @@ abstract class BeaconBroadcasterPlatform extends PlatformInterface {
   Future<String?> getPlatformVersion() {
     throw UnimplementedError('platformVersion() has not been implemented.');
   }
+
+  Future<void> checkBluetoothState() {
+    throw UnimplementedError('checkBluetoothState() has not been implemented.');
+  }
 }

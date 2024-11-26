@@ -27,7 +27,9 @@ enum class BluetoothState(val nameString: String) {
 }
 
 enum class ChannelName(val nameString: String) {
-    BLUETOOTH_STATE("beacon_broadcaster/bluetooth_state"), METHOD("beacon_broadcaster/method_channel")
+    BLUETOOTH_STATE("beacon_broadcaster/bluetooth_state"),
+    METHOD("beacon_broadcaster/method_channel"),
+    LOG("beacon_broadcaster/log")
 }
 
 /** BeaconBroadcasterPlugin */
@@ -38,6 +40,7 @@ class BeaconBroadcasterPlugin : FlutterPlugin, MethodCallHandler {
     /// when the Flutter Engine is detached from the Activity
     private lateinit var methodChannel: MethodChannel
     private lateinit var bluetoothStateChannel: EventChannel
+    private lateinit var logChannel: EventChannel
     private lateinit var bluetoothManager: BluetoothManager
     private var bluetoothAdapter: android.bluetooth.BluetoothAdapter? = null
     private lateinit var applicationContext: Context
@@ -48,6 +51,10 @@ class BeaconBroadcasterPlugin : FlutterPlugin, MethodCallHandler {
         bluetoothManager =
             flutterPluginBinding.applicationContext.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
         bluetoothAdapter = bluetoothManager.adapter
+        logChannel = EventChannel(
+            flutterPluginBinding.binaryMessenger, ChannelName.LOG.nameString
+        )
+        logChannel.setStreamHandler(LogStreamHandler())
         methodChannel =
             MethodChannel(flutterPluginBinding.binaryMessenger, ChannelName.METHOD.nameString)
         methodChannel.setMethodCallHandler(this)
@@ -59,10 +66,14 @@ class BeaconBroadcasterPlugin : FlutterPlugin, MethodCallHandler {
     }
 
     override fun onMethodCall(call: MethodCall, result: Result) {
-        if (call.method == "getPlatformVersion") {
-            result.success("Android ${android.os.Build.VERSION.RELEASE}")
-        } else {
-            result.notImplemented()
+        when (call.method) {
+            "getPlatformVersion" -> result.success("Android ${android.os.Build.VERSION.RELEASE}")
+            "checkBluetoothState" -> {
+                checkBluetoothState()
+                result.success("")
+            }
+
+            else -> result.notImplemented()
         }
     }
 
@@ -71,13 +82,21 @@ class BeaconBroadcasterPlugin : FlutterPlugin, MethodCallHandler {
     }
 
     private fun checkBluetoothState() {
-        if (bluetoothAdapter == null) {
+        if (!applicationContext.packageManager.hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
             bluetoothStateStreamHandler.eventSink?.success(BluetoothState.UNSUPPORTED.nameString)
-        } else if (bluetoothAdapter?.isEnabled == false) {
-            bluetoothStateStreamHandler.eventSink?.success(BluetoothState.OFF.nameString)
-        } else {
-            bluetoothStateStreamHandler.eventSink?.success(BluetoothState.READY.nameString)
+            return
         }
+        if (!checkBluetoothPermissions()) {
+            bluetoothStateStreamHandler.eventSink?.success(BluetoothState.UNAUTHORIZED.nameString)
+            return
+        }
+        if (bluetoothAdapter?.isEnabled == false) {
+            bluetoothStateStreamHandler.eventSink?.success(BluetoothState.OFF.nameString)
+            return
+        }
+        if (bluetoothAdapter?.isEnabled == true) bluetoothStateStreamHandler.eventSink?.success(
+            BluetoothState.READY.nameString
+        )
     }
 
     private fun checkBluetoothPermissions(): Boolean {
@@ -108,22 +127,8 @@ class BeaconBroadcasterPlugin : FlutterPlugin, MethodCallHandler {
         var eventSink: EventSink? = null
 
         override fun onListen(arguments: Any?, events: EventSink?) {
-            val bluetoothLEAvailable =
-                applicationContext.packageManager.hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)
-            if (!bluetoothLEAvailable) {
-                events?.success(BluetoothState.UNSUPPORTED.nameString)
-                return
-            }
-            if (bluetoothAdapter?.isEnabled == false) {
-                events?.success(BluetoothState.OFF.nameString)
-                return
-            }
             eventSink = events
-            if (!checkBluetoothPermissions()) {
-                events?.success(BluetoothState.UNAUTHORIZED.nameString)
-                eventSink = null
-                return
-            }
+            checkBluetoothState()
             adapterStateChangedReceiver = object : BroadcastReceiver() {
                 override fun onReceive(context: Context?, intent: Intent?) {
                     println("Bluetooth state changed")
@@ -148,7 +153,6 @@ class BeaconBroadcasterPlugin : FlutterPlugin, MethodCallHandler {
                 filter,
                 ContextCompat.RECEIVER_NOT_EXPORTED
             )
-            if (bluetoothAdapter?.isEnabled == true) events?.success(BluetoothState.READY.nameString)
         }
 
         override fun onCancel(arguments: Any?) {
@@ -156,5 +160,21 @@ class BeaconBroadcasterPlugin : FlutterPlugin, MethodCallHandler {
             eventSink = null
         }
 
+    }
+
+    inner class LogStreamHandler : EventChannel.StreamHandler {
+        private var eventSink: EventSink? = null
+
+        override fun onListen(arguments: Any?, events: EventSink?) {
+            eventSink = events
+        }
+
+        override fun onCancel(arguments: Any?) {
+            eventSink = null
+        }
+
+        fun log(message: String) {
+            eventSink?.success(message)
+        }
     }
 }

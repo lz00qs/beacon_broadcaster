@@ -1,75 +1,66 @@
-import 'package:flutter/foundation.dart';
+import 'package:beacon_broadcaster_example/bluetooth_disabled_page.dart';
+import 'package:beacon_broadcaster_example/bluetooth_unknown_page.dart';
 import 'package:flutter/material.dart';
-import 'dart:async';
 
-import 'package:flutter/services.dart';
 import 'package:beacon_broadcaster/beacon_broadcaster.dart';
+import 'package:get/get.dart';
+
+import 'bluetooth_unauthorized_page.dart';
+import 'bluetooth_unsupported_page.dart';
 
 void main() {
   runApp(const MyApp());
 }
 
-class MyApp extends StatefulWidget {
+class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
-  State<MyApp> createState() => _MyAppState();
+  Widget build(BuildContext context) {
+    return GetMaterialApp(
+      title: 'Beacon Broadcaster Example',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      home: const MyHomePage(title: 'Beacon Broadcaster Example'),
+    );
+  }
 }
 
-class _MyAppState extends State<MyApp> {
-  String _platformVersion = 'Unknown';
-  final _beaconBroadcasterPlugin = BeaconBroadcaster();
+class MyHomePage extends StatelessWidget {
+  const MyHomePage({super.key, required this.title});
 
-  @override
-  void initState() {
-    super.initState();
-    initPlatformState();
-  }
-
-  // Platform messages are asynchronous, so we initialize in an async method.
-  Future<void> initPlatformState() async {
-    String platformVersion;
-    // Platform messages may fail, so we use a try/catch PlatformException.
-    // We also handle the message potentially returning null.
-    try {
-      platformVersion =
-          await _beaconBroadcasterPlugin.getPlatformVersion() ?? 'Unknown platform version';
-    } on PlatformException {
-      platformVersion = 'Failed to get platform version.';
-    }
-
-    try {
-      _beaconBroadcasterPlugin.bluetoothState.listen((state) {
-        if (kDebugMode) {
-          print('Bluetooth state: $state');
-        }
-      });
-    } on PlatformException {
-      if (kDebugMode) {
-        print('Failed to listen to bluetooth state.');
-      }
-    }
-    // If the widget was removed from the tree while the asynchronous platform
-    // message was in flight, we want to discard the reply rather than calling
-    // setState to update our non-existent appearance.
-    if (!mounted) return;
-
-    setState(() {
-      _platformVersion = platformVersion;
-    });
-  }
+  final String title;
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        appBar: AppBar(
-          title: const Text('Plugin example app'),
-        ),
-        body: Center(
-          child: Text('Running on: $_platformVersion\n'),
-        ),
+    final beaconBroadcaster = Get.put(BeaconBroadcaster());
+    final bluetoothState = BluetoothState.unknown.obs;
+    bluetoothState.bindStream(beaconBroadcaster.bluetoothState);
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(title),
       ),
+      body: Center(child: Obx(
+        () {
+          switch (bluetoothState.value) {
+            case BluetoothState.unknown:
+              return const BluetoothUnknownPage();
+            case BluetoothState.unsupported:
+              return const BluetoothUnsupportedPage();
+            case BluetoothState.unauthorized:
+              return const BluetoothUnauthorizedPage();
+            case BluetoothState.off:
+              return const BluetoothDisabledPage();
+            case BluetoothState.ready:
+              return const Center(
+                child: Text('Bluetooth is ready'),
+              );
+            default:
+              return const BluetoothUnknownPage();
+          }
+        },
+      )),
     );
   }
 }
