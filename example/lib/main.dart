@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 
@@ -37,6 +38,17 @@ class _MyAppState extends State<MyApp> {
       platformVersion = 'Failed to get platform version.';
     }
 
+    try {
+      _beaconBroadcasterPlugin.bluetoothState.listen((state) {
+        if (kDebugMode) {
+          print('Bluetooth state: $state');
+        }
+      });
+    } on PlatformException {
+      if (kDebugMode) {
+        print('Failed to listen to bluetooth state.');
+      }
+    }
     // If the widget was removed from the tree while the asynchronous platform
     // message was in flight, we want to discard the reply rather than calling
     // setState to update our non-existent appearance.

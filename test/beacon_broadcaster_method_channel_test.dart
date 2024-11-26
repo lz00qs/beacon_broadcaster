@@ -1,11 +1,11 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:beacon_broadcaster/beacon_broadcaster_method_channel.dart';
+import 'package:beacon_broadcaster/beacon_broadcaster_channels.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  MethodChannelBeaconBroadcaster platform = MethodChannelBeaconBroadcaster();
+  ChannelsBeaconBroadcaster platform = ChannelsBeaconBroadcaster();
   const MethodChannel channel = MethodChannel('beacon_broadcaster');
 
   setUp(() {

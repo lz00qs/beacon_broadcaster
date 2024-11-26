@@ -1,6 +1,7 @@
+import 'package:beacon_broadcaster/beacon_broadcaster.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
-import 'beacon_broadcaster_method_channel.dart';
+import 'beacon_broadcaster_channels.dart';
 
 abstract class BeaconBroadcasterPlatform extends PlatformInterface {
   /// Constructs a BeaconBroadcasterPlatform.
@@ -8,11 +9,11 @@ abstract class BeaconBroadcasterPlatform extends PlatformInterface {
 
   static final Object _token = Object();
 
-  static BeaconBroadcasterPlatform _instance = MethodChannelBeaconBroadcaster();
+  static BeaconBroadcasterPlatform _instance = ChannelsBeaconBroadcaster();
 
   /// The default instance of [BeaconBroadcasterPlatform] to use.
   ///
-  /// Defaults to [MethodChannelBeaconBroadcaster].
+  /// Defaults to [ChannelsBeaconBroadcaster].
   static BeaconBroadcasterPlatform get instance => _instance;
 
   /// Platform-specific implementations should set this with their own
@@ -21,6 +22,14 @@ abstract class BeaconBroadcasterPlatform extends PlatformInterface {
   static set instance(BeaconBroadcasterPlatform instance) {
     PlatformInterface.verifyToken(instance, _token);
     _instance = instance;
+  }
+
+  Stream<BluetoothState> get bluetoothState {
+    throw UnimplementedError('bluetoothState() has not been implemented.');
+  }
+
+  Stream<String> get nativeLog {
+    throw UnimplementedError('log() has not been implemented.');
   }
 
   Future<String?> getPlatformVersion() {
