@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:beacon_broadcaster/beacon_broadcaster.dart';
 import 'package:beacon_broadcaster/beacon_broadcaster_platform_interface.dart';
@@ -14,10 +16,27 @@ class MockBeaconBroadcasterPlatform
   Stream<BluetoothState> get bluetoothState => const Stream.empty();
 
   @override
-  Stream<String> get nativeLog => const Stream.empty();
+  Future<void> checkBluetoothState() => Future.value();
 
   @override
-  Future<void> checkBluetoothState() => Future.value();
+  void initializeLogger() {}
+
+  @override
+  Future<int> startAdvertising(
+      {required Uint8List uuid,
+      required int major,
+      required int minor,
+      required int txPower,
+      required int advertiseMode,
+      required int advertiseTxPower}) {
+    // TODO: implement startAdvertising
+    return Future.value(0);
+  }
+
+  @override
+  Future<int> stopAdvertising() {
+    return Future.value(0);
+  }
 }
 
 void main() {

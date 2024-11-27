@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:beacon_broadcaster/beacon_broadcaster.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -45,13 +47,60 @@ class ChannelsBeaconBroadcaster extends BeaconBroadcasterPlatform {
   }
 
   @override
-  Stream<String> get nativeLog {
-    return logChannel.receiveBroadcastStream().map((event) {
+  void initializeLogger() {
+    logChannel.receiveBroadcastStream().listen((event) {
+      var iLogLevel = LogLevels.debug;
+      var message = '';
       try {
-        return event as String;
+        final logLevelString = event['logLevel'] as String;
+        iLogLevel = LogLevels.values.firstWhere(
+          (level) => level.toString().split('.').last == logLevelString,
+        );
+        message = event['message'] as String;
       } catch (e) {
-        return '';
+        iLogLevel = LogLevels.error;
+        message = 'Failed to parse log message: $event';
+      }
+      if (iLogLevel.index >= BeaconBroadcasterPlatform.logLevel.index) {
+        if (kDebugMode) {
+          print('Native [${iLogLevel.toString().split('.').last}]: $message');
+        }
       }
     });
+  }
+
+  @override
+  Future<int> startAdvertising(
+      {required Uint8List uuid,
+      required int major,
+      required int minor,
+      required int txPower,
+      required int advertiseMode,
+      required int advertiseTxPower}) async {
+    final parameters = <String, dynamic>{
+      'uuid': uuid,
+      'major': major,
+      'minor': minor,
+      'txPower': txPower,
+      // 'advertiseMode': advertiseMode,
+      // 'advertiseTxPower': advertiseTxPower,
+    };
+
+    // android 平台的广播参数
+    if (Platform.isAndroid) {
+      parameters['advertiseMode'] = advertiseMode;
+      parameters['advertiseTxPower'] = advertiseTxPower;
+    }
+    final result = await methodChannel.invokeMethod<int>(
+      'startAdvertising',
+      parameters,
+    );
+    return result ?? -1;
+  }
+
+  @override
+  Future<int> stopAdvertising() async {
+    final result = await methodChannel.invokeMethod<int>('stopAdvertising');
+    return result ?? -1;
   }
 }

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:beacon_broadcaster/beacon_broadcaster.dart';
 import 'package:get/get.dart';
 
+import 'bluetooth_ready_page.dart';
 import 'bluetooth_unauthorized_page.dart';
 import 'bluetooth_unsupported_page.dart';
 
@@ -53,8 +54,12 @@ class MyHomePage extends StatelessWidget {
             case BluetoothState.off:
               return const BluetoothDisabledPage();
             case BluetoothState.ready:
-              return const Center(
-                child: Text('Bluetooth is ready'),
+              return const BluetoothReadyPage(
+                isBeaconing: false,
+              );
+            case BluetoothState.beaconing:
+              return const BluetoothReadyPage(
+                isBeaconing: true,
               );
             default:
               return const BluetoothUnknownPage();

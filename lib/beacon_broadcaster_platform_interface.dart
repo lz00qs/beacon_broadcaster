@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:beacon_broadcaster/beacon_broadcaster.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
@@ -24,12 +26,10 @@ abstract class BeaconBroadcasterPlatform extends PlatformInterface {
     _instance = instance;
   }
 
+  static var logLevel = LogLevels.debug;
+
   Stream<BluetoothState> get bluetoothState {
     throw UnimplementedError('bluetoothState() has not been implemented.');
-  }
-
-  Stream<String> get nativeLog {
-    throw UnimplementedError('log() has not been implemented.');
   }
 
   Future<String?> getPlatformVersion() {
@@ -38,5 +38,23 @@ abstract class BeaconBroadcasterPlatform extends PlatformInterface {
 
   Future<void> checkBluetoothState() {
     throw UnimplementedError('checkBluetoothState() has not been implemented.');
+  }
+
+  void initializeLogger() {
+    throw UnimplementedError('initializeLogger() has not been implemented.');
+  }
+
+  Future<int> startAdvertising(
+      {required Uint8List uuid,
+      required int major,
+      required int minor,
+      required int txPower,
+      required int advertiseMode,
+      required int advertiseTxPower}) {
+    throw UnimplementedError('startAdvertising() has not been implemented.');
+  }
+
+  Future<int> stopAdvertising() {
+    throw UnimplementedError('stopAdvertising() has not been implemented.');
   }
 }
