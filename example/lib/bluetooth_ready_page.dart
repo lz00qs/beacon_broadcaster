@@ -1,41 +1,39 @@
 import 'package:beacon_broadcaster/beacon_broadcaster.dart';
+import 'package:beacon_broadcaster_example/widgets/beacon_item.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-class BluetoothReadyPage extends StatelessWidget {
-  final bool isBeaconing;
+import 'models/beacon.dart';
 
-  const BluetoothReadyPage({super.key, required this.isBeaconing});
+class BluetoothReadyPage extends StatelessWidget {
+  const BluetoothReadyPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-        child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
+    final bluetoothState = Get.find<Rx<BluetoothState>>();
+    final beaconList = Get.find<RxList<Beacon>>();
+    final selectedBeaconId = Get.find<RxInt>();
+    final isToggle = Get.find<RxBool>();
+    return Column(
       children: [
-        const Text('Bluetooth is ready'),
-        const SizedBox(height: 50),
-        ElevatedButton(
-          onPressed: () async {
-            if (isBeaconing) {
-              await Get.find<BeaconBroadcaster>().stopAdvertising();
-            } else {
-              await Get.find<BeaconBroadcaster>().startAdvertising(
-                  uuid: '550e8400-e29b-41d4-a716-446655440000',
-                  major: 0x66,
-                  minor: 0x99,
-                  txPower: 0,
-                  advertiseMode:
-                      AndroidBleAdvertiseSettings.advertiseModeLowLatency,
-                  advertiseTxPower:
-                      AndroidBleAdvertiseSettings.advertiseTxPowerHigh);
-            }
-          },
-          child: isBeaconing
-              ? const Text('Stop Broadcasting')
-              : const Text('Start Broadcasting'),
-        )
+        Obx(() => Text('Bluetooth state: ${bluetoothState.value}')),
+        Expanded(
+            child: Obx(() => GridView.builder(
+                  gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                      maxCrossAxisExtent: 140, childAspectRatio: 1.0),
+                  itemCount: beaconList.length,
+                  itemBuilder: (context, index) {
+                    return Obx(() => Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: BeaconItem(
+                              beacon: beaconList[index],
+                              isSelected: (beaconList[index].id ==
+                                  selectedBeaconId.value),
+                              isToggle: isToggle.value),
+                        ));
+                  },
+                )))
       ],
-    ));
+    );
   }
 }

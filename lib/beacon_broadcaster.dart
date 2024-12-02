@@ -31,14 +31,22 @@ class AndroidBleAdvertiseSettings {
 }
 
 // 检验 16Bytes 的 16 进制 UUID 是否合法 550e8400-e29b-41d4-a716-446655440000
-bool isUUID(String uuid) {
+bool isUuidValid(String uuid) {
   RegExp regExp = RegExp(
       r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
   return regExp.hasMatch(uuid);
 }
 
+bool isMajorOrMinorValid(int value) {
+  return value >= 0 && value <= 255;
+}
+
+bool isTxPowerValid(int value) {
+  return value >= -127 && value <= 127;
+}
+
 Uint8List uuidStringToBytes(String uuid) {
-  if (!isUUID(uuid)) {
+  if (!isUuidValid(uuid)) {
     throw ArgumentError('Invalid UUID');
   }
   final uuidWithoutDashes = uuid.replaceAll('-', '');
@@ -85,13 +93,13 @@ class BeaconBroadcaster {
     } catch (e) {
       return Future.error(e);
     }
-    if (major < 0 || major > 65535) {
+    if (major < 0 || major > 255) {
       return Future.error('Invalid major');
     }
-    if (minor < 0 || minor > 65535) {
+    if (minor < 0 || minor > 255) {
       return Future.error('Invalid minor');
     }
-    if (txPower < -100 || txPower > 20) {
+    if (txPower < -127 || txPower > 127) {
       return Future.error('Invalid txPower');
     }
     if (advertiseMode < 0 || advertiseMode > 2) {

@@ -32,6 +32,10 @@ dependencies:
   permission_handler: ^11.3.1
   app_settings: ^5.1.1
   fluttertoast: ^8.2.8
+  objectbox: ^4.0.3
+  objectbox_flutter_libs: any
+  path: ^1.9.0
+  path_provider: ^2.1.5
 
 dev_dependencies:
   integration_test:
@@ -45,6 +49,8 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^4.0.0
+  build_runner: ^2.4.13
+  objectbox_generator: any
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
