@@ -10,6 +10,8 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.ContextCompat.registerReceiver
@@ -81,9 +83,10 @@ class BeaconBroadcasterPlugin : FlutterPlugin, MethodCallHandler {
         bluetoothStateChannel.setStreamHandler(BluetoothStateStreamHandler())
     }
 
+    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     override fun onMethodCall(call: MethodCall, result: Result) {
         when (call.method) {
-            "getPlatformVersion" -> result.success("Android ${android.os.Build.VERSION.RELEASE}")
+            "getPlatformVersion" -> result.success("Android ${Build.VERSION.RELEASE}")
             "checkBluetoothState" -> {
                 checkBluetoothState()
                 result.success("")
@@ -144,6 +147,7 @@ class BeaconBroadcasterPlugin : FlutterPlugin, MethodCallHandler {
         )
     }
 
+    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     private fun startAdvertising(
         uuid: ByteArray,
         major: Int,
@@ -185,8 +189,13 @@ class BeaconBroadcasterPlugin : FlutterPlugin, MethodCallHandler {
             .array()
         payload += txPower.toByte()
 
+        // 用十六进制打印 payload
+        logD("payload: ${payload.joinToString("") { it.toUByte().toString(16).padStart(2, '0') }}")
+
+
         val settings: AdvertiseSettings = AdvertiseSettings.Builder()
-            .setConnectable(false)
+            .setConnectable(true)
+            .setDiscoverable(true)
             .setAdvertiseMode(advertiseMode)
             .setTxPowerLevel(advertiseTxPower)
             .setTimeout(0)
@@ -250,7 +259,7 @@ class BeaconBroadcasterPlugin : FlutterPlugin, MethodCallHandler {
 
     private fun checkBluetoothPermissions(): Boolean {
         // 当 SDK < 31 时需要检查 BLUETOOTH 和 BLUETOOTH_ADMIN 权限
-        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.S) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
             val bluetoothPermission = ContextCompat.checkSelfPermission(
                 applicationContext, Manifest.permission.BLUETOOTH
             )
