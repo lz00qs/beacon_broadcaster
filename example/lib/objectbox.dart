@@ -8,6 +8,8 @@ class ObjectBox {
   late final Store store;
   late final Box<Beacon> beaconBox;
 
+  static ObjectBox? _instance;
+
   ObjectBox._create(this.store) {
     beaconBox = Box<Beacon>(store);
   }
@@ -16,7 +18,18 @@ class ObjectBox {
   static Future<ObjectBox> create() async {
     final docsDir = await getApplicationDocumentsDirectory();
     // Future<Store> openStore() {...} is defined in the generated objectbox.g.dart
-    final store = await openStore(directory: p.join(docsDir.path, "objectbox-store"));
-    return ObjectBox._create(store);
+    final store =
+        await openStore(directory: p.join(docsDir.path, "objectbox-store"));
+    final objectbox = ObjectBox._create(store);
+    _instance = objectbox;
+    return objectbox;
+  }
+
+  static ObjectBox get instance {
+    if (_instance == null) {
+      throw Exception(
+          "ObjectBox not initialized. Call ObjectBox.create() first.");
+    }
+    return _instance!;
   }
 }

@@ -3,10 +3,10 @@ import 'dart:io';
 import 'package:beacon_broadcaster/beacon_broadcaster.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:get/get.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../models/beacon.dart';
-import '../objectbox.dart';
 
 bool _isBeaconParamsValid(String uuid, int major, int minor, int txPower) {
   return isUuidValid(uuid) &&
@@ -22,50 +22,68 @@ class BeaconEditDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final name = beacon.name.obs;
-    final uuid = beacon.uuid.obs;
-    final uuidTextController = TextEditingController(text: uuid.value);
-    final major = beacon.major.obs;
-    final majorTextController =
-        TextEditingController(text: major.value.toString());
-    final minor = beacon.minor.obs;
-    final minorTextController =
-        TextEditingController(text: minor.value.toString());
-    final txPower = beacon.txPower.obs;
-    final txPowerTextController =
-        TextEditingController(text: txPower.value.toString());
-    final advertiseMode = beacon.advertiseMode.obs;
-    final advertiseTxPower = beacon.advertiseTxPower.obs;
-
+    final nameProvider = StateProvider<String>((ref) => beacon.name);
+    final uuidProvider = StateProvider<String>((ref) => beacon.uuid);
+    final majorProvider = StateProvider<int>((ref) => beacon.major);
+    final minorProvider = StateProvider<int>((ref) => beacon.minor);
+    final txPowerProvider = StateProvider<int>((ref) => beacon.txPower);
+    final advertiseModeProvider =
+        StateProvider<int>((ref) => beacon.advertiseMode);
+    final advertiseTxPowerProvider =
+        StateProvider<int>((ref) => beacon.advertiseTxPower);
     return AlertDialog(
       title: const Text('Beacon Info'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TextField(
-            decoration: const InputDecoration(labelText: 'Name'),
-            controller: TextEditingController(text: name.value),
-            onChanged: (value) => name.value = value,
-          ),
-          Obx(
-            () => TextField(
+      content: Scrollbar(
+          // thumbVisibility: true,
+          child: SingleChildScrollView(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          HookConsumer(builder: (context, ref, child) {
+            final nameTextController =
+                useTextEditingController(text: beacon.name);
+            useEffect(() {
+              nameTextController.addListener(() {
+                ref.read(nameProvider.notifier).state = nameTextController.text;
+              });
+              return null;
+            }, [nameTextController]);
+            return TextField(
+              decoration: const InputDecoration(labelText: 'Name'),
+              controller: nameTextController,
+            );
+          }),
+          HookConsumer(builder: (context, ref, child) {
+            final uuidTextController =
+                useTextEditingController(text: beacon.uuid);
+            useEffect(() {
+              uuidTextController.addListener(() {
+                ref.read(uuidProvider.notifier).state = uuidTextController.text;
+              });
+              return null;
+            }, [uuidTextController]);
+            return TextField(
               decoration: InputDecoration(
                   labelText: 'UUID',
                   hintText: '550e8400-e29b-41d4-a716-446655440000',
-                  errorText: isUuidValid(uuid.value)
+                  errorText: isUuidValid(ref.watch(uuidProvider))
                       ? null
                       : 'Invalid UUID, format: 4-2-2-2-6 hex bytes'),
               controller: uuidTextController,
-              onChanged: (value) {
-                uuid.value = value;
-              },
-            ),
-          ),
-          Obx(
-            () => TextField(
+            );
+          }),
+          HookConsumer(builder: (context, ref, child) {
+            final majorTextController =
+                useTextEditingController(text: beacon.major.toString());
+            useEffect(() {
+              majorTextController.addListener(() {
+                ref.read(majorProvider.notifier).state =
+                    int.tryParse(majorTextController.text) ?? -1;
+              });
+              return null;
+            }, [majorTextController]);
+            return TextField(
               decoration: InputDecoration(
                   labelText: 'Major',
-                  errorText: isMajorOrMinorValid(major.value)
+                  errorText: isMajorOrMinorValid(ref.watch(majorProvider))
                       ? null
                       : 'Invalid Major'),
               keyboardType: TextInputType.number,
@@ -74,20 +92,22 @@ class BeaconEditDialog extends StatelessWidget {
                 FilteringTextInputFormatter.digitsOnly, // 只允许输入数字
               ],
               controller: majorTextController,
-              onChanged: (value) {
-                if (value == '') {
-                  major.value = -1;
-                } else {
-                  major.value = int.parse(value);
-                }
-              },
-            ),
-          ),
-          Obx(
-            () => TextField(
+            );
+          }),
+          HookConsumer(builder: (context, ref, child) {
+            final minorTextController =
+                useTextEditingController(text: beacon.minor.toString());
+            useEffect(() {
+              minorTextController.addListener(() {
+                ref.read(minorProvider.notifier).state =
+                    int.tryParse(minorTextController.text) ?? -1;
+              });
+              return null;
+            }, [minorTextController]);
+            return TextField(
               decoration: InputDecoration(
                   labelText: 'Minor',
-                  errorText: isMajorOrMinorValid(minor.value)
+                  errorText: isMajorOrMinorValid(ref.watch(minorProvider))
                       ? null
                       : 'Invalid Minor'),
               keyboardType: TextInputType.number,
@@ -95,20 +115,22 @@ class BeaconEditDialog extends StatelessWidget {
                 FilteringTextInputFormatter.digitsOnly, // 只允许输入数字
               ],
               controller: minorTextController,
-              onChanged: (value) {
-                if (value == '') {
-                  minor.value = -1;
-                } else {
-                  minor.value = int.parse(value);
-                }
-              },
-            ),
-          ),
-          Obx(
-            () => TextField(
+            );
+          }),
+          HookConsumer(builder: (context, ref, child) {
+            final txPowerTextController =
+                useTextEditingController(text: beacon.txPower.toString());
+            useEffect(() {
+              txPowerTextController.addListener(() {
+                ref.read(txPowerProvider.notifier).state =
+                    int.tryParse(txPowerTextController.text) ?? -1;
+              });
+              return null;
+            }, [txPowerTextController]);
+            return TextField(
               decoration: InputDecoration(
                   labelText: 'Tx Power',
-                  errorText: isTxPowerValid(txPower.value)
+                  errorText: isTxPowerValid(ref.watch(txPowerProvider))
                       ? null
                       : 'Invalid Tx Power'),
               keyboardType: TextInputType.number,
@@ -116,23 +138,17 @@ class BeaconEditDialog extends StatelessWidget {
                 FilteringTextInputFormatter.digitsOnly, // 只允许输入数字
               ],
               controller: txPowerTextController,
-              onChanged: (value) {
-                if (value == '') {
-                  txPower.value = -1;
-                } else {
-                  txPower.value = int.parse(value);
-                }
-              },
-            ),
-          ),
+            );
+          }),
           Platform.isAndroid
-              ? Row(
-                  children: [
-                    const Text('Advertise Mode: '),
-                    const Spacer(),
-                    Obx(
-                      () => DropdownButton(
-                          value: advertiseMode.value,
+              ? Consumer(builder: (context, ref, child) {
+                  final advertiseMode = ref.watch(advertiseModeProvider);
+                  return Row(
+                    children: [
+                      const Text('Advertise Mode: '),
+                      const Spacer(),
+                      DropdownButton(
+                          value: advertiseMode,
                           items: const [
                             DropdownMenuItem(
                               value: AndroidBleAdvertiseSettings
@@ -151,21 +167,28 @@ class BeaconEditDialog extends StatelessWidget {
                             ),
                           ],
                           onChanged: (value) {
-                            advertiseMode.value = value as int;
+                            ref.read(advertiseModeProvider.notifier).state =
+                                value as int;
                           }),
-                    )
-                  ],
-                )
+                    ],
+                  );
+                })
               : Container(),
           Platform.isAndroid
-              ? Row(
-                  children: [
-                    const Text('Advertise Tx Power: '),
-                    const Spacer(),
-                    Obx(
-                      () => DropdownButton(
-                          value: advertiseTxPower.value,
+              ? Consumer(builder: (context, ref, child) {
+                  final advertiseTxPower = ref.watch(advertiseTxPowerProvider);
+                  return Row(
+                    children: [
+                      const Text('Advertise Tx Power: '),
+                      const Spacer(),
+                      DropdownButton(
+                          value: advertiseTxPower,
                           items: const [
+                            DropdownMenuItem(
+                              value: AndroidBleAdvertiseSettings
+                                  .advertiseTxPowerUltraLow,
+                              child: Text('Ultra Low Power'),
+                            ),
                             DropdownMenuItem(
                               value: AndroidBleAdvertiseSettings
                                   .advertiseTxPowerLow,
@@ -183,14 +206,15 @@ class BeaconEditDialog extends StatelessWidget {
                             ),
                           ],
                           onChanged: (value) {
-                            advertiseTxPower.value = value as int;
+                            ref.read(advertiseTxPowerProvider.notifier).state =
+                                value as int;
                           }),
-                    )
-                  ],
-                )
-              : Container()
-        ],
-      ),
+                    ],
+                  );
+                })
+              : Container(),
+        ]),
+      )),
       actions: [
         TextButton(
           child: const Text(
@@ -198,47 +222,43 @@ class BeaconEditDialog extends StatelessWidget {
             style: TextStyle(color: Colors.red),
           ),
           onPressed: () {
-            Get.back();
+            Navigator.of(context).pop();
           },
         ),
-        TextButton(
-          child: Obx(
-            () => Text(
+        Consumer(builder: (context, ref, child) {
+          return TextButton(
+            onPressed: () {
+              if (_isBeaconParamsValid(
+                  ref.watch(uuidProvider),
+                  ref.watch(majorProvider),
+                  ref.watch(minorProvider),
+                  ref.watch(txPowerProvider))) {
+                final newBeacon = Beacon(
+                  name: ref.watch(nameProvider),
+                  uuid: ref.watch(uuidProvider),
+                  major: ref.watch(majorProvider),
+                  minor: ref.watch(minorProvider),
+                  txPower: ref.watch(txPowerProvider),
+                  advertiseMode: ref.watch(advertiseModeProvider),
+                  advertiseTxPower: ref.watch(advertiseTxPowerProvider),
+                );
+                newBeacon.id = beacon.id;
+                Navigator.of(context).pop(newBeacon);
+              }
+            },
+            child: Text(
               'Save',
               style: TextStyle(
                   color: _isBeaconParamsValid(
-                          uuid.value, major.value, minor.value, txPower.value)
+                          ref.watch(uuidProvider),
+                          ref.watch(majorProvider),
+                          ref.watch(minorProvider),
+                          ref.watch(txPowerProvider))
                       ? Colors.blue
                       : Colors.grey),
             ),
-          ),
-          onPressed: () {
-            if (_isBeaconParamsValid(
-                uuid.value, major.value, minor.value, txPower.value)) {
-              final newBeacon = Beacon(
-                name: name.value,
-                uuid: uuid.value,
-                major: major.value,
-                minor: minor.value,
-                txPower: txPower.value,
-                advertiseMode: advertiseMode.value,
-                advertiseTxPower: advertiseTxPower.value,
-              );
-              newBeacon.id = beacon.id;
-              final objectbox = Get.find<ObjectBox>();
-              objectbox.beaconBox.put(newBeacon);
-              final beaconList = Get.find<RxList<Beacon>>();
-              if (beaconList.contains(beacon)) {
-                final index = beaconList.indexOf(beacon);
-                beaconList[index] = newBeacon;
-              } else {
-                beaconList.add(newBeacon);
-              }
-              Get.back(result: newBeacon);
-              Get.back(result: newBeacon);
-            }
-          },
-        ),
+          );
+        }),
       ],
     );
   }

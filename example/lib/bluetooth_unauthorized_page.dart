@@ -1,15 +1,16 @@
 import 'package:app_settings/app_settings.dart';
-import 'package:beacon_broadcaster/beacon_broadcaster.dart';
+import 'package:beacon_broadcaster_example/providers.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:get/get.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-class BluetoothUnauthorizedPage extends StatelessWidget {
+class BluetoothUnauthorizedPage extends ConsumerWidget {
   const BluetoothUnauthorizedPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final beaconBroadcaster = ref.watch(beaconBroadcasterProvider);
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -18,7 +19,6 @@ class BluetoothUnauthorizedPage extends StatelessWidget {
           const SizedBox(height: 50),
           ElevatedButton(
               onPressed: () async {
-                final beaconBroadcaster = Get.find<BeaconBroadcaster>();
                 final platformVersion =
                     await beaconBroadcaster.getPlatformVersion();
                 // platformVersion = 'Android 11' 拆分成 ['Android', '11']

@@ -1,38 +1,38 @@
 import 'package:beacon_broadcaster/beacon_broadcaster.dart';
+import 'package:beacon_broadcaster_example/providers.dart';
 import 'package:beacon_broadcaster_example/widgets/beacon_item.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'models/beacon.dart';
-
-class BluetoothReadyPage extends StatelessWidget {
+class BluetoothReadyPage extends ConsumerWidget {
   const BluetoothReadyPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final bluetoothState = Get.find<Rx<BluetoothState>>();
-    final beaconList = Get.find<RxList<Beacon>>();
-    final selectedBeaconId = Get.find<RxInt>();
-    final isToggle = Get.find<RxBool>();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final beaconList = ref.watch(beaconListProvider);
+    final isToggle = ref.watch(isToggleProvider);
+    final bluetoothState = ref.watch(bluetoothStateProvider);
     return Column(
       children: [
-        Obx(() => Text('Bluetooth state: ${bluetoothState.value}')),
+        switch (bluetoothState) {
+          AsyncValue<BluetoothState>(:final value) =>
+            Text('Bluetooth state: $value'),
+        },
         Expanded(
-            child: Obx(() => GridView.builder(
-                  gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                      maxCrossAxisExtent: 140, childAspectRatio: 1.0),
-                  itemCount: beaconList.length,
-                  itemBuilder: (context, index) {
-                    return Obx(() => Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: BeaconItem(
-                              beacon: beaconList[index],
-                              isSelected: (beaconList[index].id ==
-                                  selectedBeaconId.value),
-                              isToggle: isToggle.value),
-                        ));
-                  },
-                )))
+            child: GridView.builder(
+          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+              maxCrossAxisExtent: 140, childAspectRatio: 1.0),
+          itemCount: beaconList.length,
+          itemBuilder: (context, index) {
+            return Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: BeaconItem(
+                  id: beaconList[index].id,
+                  beacon: beaconList[index],
+                  isToggle: isToggle),
+            );
+          },
+        ))
       ],
     );
   }

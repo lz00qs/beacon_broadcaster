@@ -8,7 +8,7 @@ plugins {
 android {
     namespace = "top.hylcreative.beacon_broadcaster_example"
 //    compileSdk = flutter.compileSdkVersion
-    compileSdk = 34
+    compileSdk = 35
 //    ndkVersion = flutter.ndkVersion
     ndkVersion = "28.0.12674087"
 
