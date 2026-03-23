@@ -20,54 +20,63 @@ export 'package:objectbox/objectbox.dart'; // so that callers only have to impor
 
 final _entities = <obx_int.ModelEntity>[
   obx_int.ModelEntity(
-      id: const obx_int.IdUid(1, 7511913308656010105),
-      name: 'Beacon',
-      lastPropertyId: const obx_int.IdUid(8, 4806087864974177336),
-      flags: 0,
-      properties: <obx_int.ModelProperty>[
-        obx_int.ModelProperty(
-            id: const obx_int.IdUid(1, 2730569928281265067),
-            name: 'uuid',
-            type: 9,
-            flags: 0),
-        obx_int.ModelProperty(
-            id: const obx_int.IdUid(2, 2173006432571952463),
-            name: 'major',
-            type: 6,
-            flags: 0),
-        obx_int.ModelProperty(
-            id: const obx_int.IdUid(3, 2614863219023221040),
-            name: 'minor',
-            type: 6,
-            flags: 0),
-        obx_int.ModelProperty(
-            id: const obx_int.IdUid(4, 2511065078273978439),
-            name: 'txPower',
-            type: 6,
-            flags: 0),
-        obx_int.ModelProperty(
-            id: const obx_int.IdUid(5, 7094870662976414494),
-            name: 'advertiseMode',
-            type: 6,
-            flags: 0),
-        obx_int.ModelProperty(
-            id: const obx_int.IdUid(6, 6972927492138248758),
-            name: 'advertiseTxPower',
-            type: 6,
-            flags: 0),
-        obx_int.ModelProperty(
-            id: const obx_int.IdUid(7, 7813204736804104912),
-            name: 'id',
-            type: 6,
-            flags: 1),
-        obx_int.ModelProperty(
-            id: const obx_int.IdUid(8, 4806087864974177336),
-            name: 'name',
-            type: 9,
-            flags: 0)
-      ],
-      relations: <obx_int.ModelRelation>[],
-      backlinks: <obx_int.ModelBacklink>[])
+    id: const obx_int.IdUid(1, 7511913308656010105),
+    name: 'Beacon',
+    lastPropertyId: const obx_int.IdUid(8, 4806087864974177336),
+    flags: 0,
+    properties: <obx_int.ModelProperty>[
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(1, 2730569928281265067),
+        name: 'uuid',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(2, 2173006432571952463),
+        name: 'major',
+        type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(3, 2614863219023221040),
+        name: 'minor',
+        type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(4, 2511065078273978439),
+        name: 'txPower',
+        type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(5, 7094870662976414494),
+        name: 'advertiseMode',
+        type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(6, 6972927492138248758),
+        name: 'advertiseTxPower',
+        type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(7, 7813204736804104912),
+        name: 'id',
+        type: 6,
+        flags: 1,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(8, 4806087864974177336),
+        name: 'name',
+        type: 9,
+        flags: 0,
+      ),
+    ],
+    relations: <obx_int.ModelRelation>[],
+    backlinks: <obx_int.ModelBacklink>[],
+  ),
 ];
 
 /// Shortcut for [obx.Store.new] that passes [getObjectBoxModel] and for Flutter
@@ -81,95 +90,127 @@ final _entities = <obx_int.ModelEntity>[
 /// For Flutter apps, also calls `loadObjectBoxLibraryAndroidCompat()` from
 /// the ObjectBox Flutter library to fix loading the native ObjectBox library
 /// on Android 6 and older.
-Future<obx.Store> openStore(
-    {String? directory,
-    int? maxDBSizeInKB,
-    int? maxDataSizeInKB,
-    int? fileMode,
-    int? maxReaders,
-    bool queriesCaseSensitiveDefault = true,
-    String? macosApplicationGroup}) async {
+Future<obx.Store> openStore({
+  String? directory,
+  int? maxDBSizeInKB,
+  int? maxDataSizeInKB,
+  int? fileMode,
+  int? maxReaders,
+  bool queriesCaseSensitiveDefault = true,
+  String? macosApplicationGroup,
+}) async {
   await loadObjectBoxLibraryAndroidCompat();
-  return obx.Store(getObjectBoxModel(),
-      directory: directory ?? (await defaultStoreDirectory()).path,
-      maxDBSizeInKB: maxDBSizeInKB,
-      maxDataSizeInKB: maxDataSizeInKB,
-      fileMode: fileMode,
-      maxReaders: maxReaders,
-      queriesCaseSensitiveDefault: queriesCaseSensitiveDefault,
-      macosApplicationGroup: macosApplicationGroup);
+  return obx.Store(
+    getObjectBoxModel(),
+    directory: directory ?? (await defaultStoreDirectory()).path,
+    maxDBSizeInKB: maxDBSizeInKB,
+    maxDataSizeInKB: maxDataSizeInKB,
+    fileMode: fileMode,
+    maxReaders: maxReaders,
+    queriesCaseSensitiveDefault: queriesCaseSensitiveDefault,
+    macosApplicationGroup: macosApplicationGroup,
+  );
 }
 
 /// Returns the ObjectBox model definition for this project for use with
 /// [obx.Store.new].
 obx_int.ModelDefinition getObjectBoxModel() {
   final model = obx_int.ModelInfo(
-      entities: _entities,
-      lastEntityId: const obx_int.IdUid(1, 7511913308656010105),
-      lastIndexId: const obx_int.IdUid(0, 0),
-      lastRelationId: const obx_int.IdUid(0, 0),
-      lastSequenceId: const obx_int.IdUid(0, 0),
-      retiredEntityUids: const [],
-      retiredIndexUids: const [],
-      retiredPropertyUids: const [],
-      retiredRelationUids: const [],
-      modelVersion: 5,
-      modelVersionParserMinimum: 5,
-      version: 1);
+    // If this version is not found, it means that this file was generated
+    // with an older version of the ObjectBox Dart generator.
+    // Please regenerate this file with the current generator version.
+    // Typically, this is done with `dart run build_runner build`.
+    generatorVersion: obx_int.GeneratorVersion.v2025_12_16,
+    entities: _entities,
+    lastEntityId: const obx_int.IdUid(1, 7511913308656010105),
+    lastIndexId: const obx_int.IdUid(0, 0),
+    lastRelationId: const obx_int.IdUid(0, 0),
+    lastSequenceId: const obx_int.IdUid(0, 0),
+    retiredEntityUids: const [],
+    retiredIndexUids: const [],
+    retiredPropertyUids: const [],
+    retiredRelationUids: const [],
+    modelVersion: 5,
+    modelVersionParserMinimum: 5,
+    version: 1,
+  );
 
   final bindings = <Type, obx_int.EntityDefinition>{
     Beacon: obx_int.EntityDefinition<Beacon>(
-        model: _entities[0],
-        toOneRelations: (Beacon object) => [],
-        toManyRelations: (Beacon object) => {},
-        getId: (Beacon object) => object.id,
-        setId: (Beacon object, int id) {
-          object.id = id;
-        },
-        objectToFB: (Beacon object, fb.Builder fbb) {
-          final uuidOffset = fbb.writeString(object.uuid);
-          final nameOffset = fbb.writeString(object.name);
-          fbb.startTable(9);
-          fbb.addOffset(0, uuidOffset);
-          fbb.addInt64(1, object.major);
-          fbb.addInt64(2, object.minor);
-          fbb.addInt64(3, object.txPower);
-          fbb.addInt64(4, object.advertiseMode);
-          fbb.addInt64(5, object.advertiseTxPower);
-          fbb.addInt64(6, object.id);
-          fbb.addOffset(7, nameOffset);
-          fbb.finish(fbb.endTable());
-          return object.id;
-        },
-        objectFromFB: (obx.Store store, ByteData fbData) {
-          final buffer = fb.BufferContext(fbData);
-          final rootOffset = buffer.derefObject(0);
-          final nameParam = const fb.StringReader(asciiOptimization: true)
-              .vTableGet(buffer, rootOffset, 18, '');
-          final uuidParam = const fb.StringReader(asciiOptimization: true)
-              .vTableGet(buffer, rootOffset, 4, '');
-          final majorParam =
-              const fb.Int64Reader().vTableGet(buffer, rootOffset, 6, 0);
-          final minorParam =
-              const fb.Int64Reader().vTableGet(buffer, rootOffset, 8, 0);
-          final txPowerParam =
-              const fb.Int64Reader().vTableGet(buffer, rootOffset, 10, 0);
-          final advertiseModeParam =
-              const fb.Int64Reader().vTableGet(buffer, rootOffset, 12, 0);
-          final advertiseTxPowerParam =
-              const fb.Int64Reader().vTableGet(buffer, rootOffset, 14, 0);
-          final object = Beacon(
-              name: nameParam,
-              uuid: uuidParam,
-              major: majorParam,
-              minor: minorParam,
-              txPower: txPowerParam,
-              advertiseMode: advertiseModeParam,
-              advertiseTxPower: advertiseTxPowerParam)
-            ..id = const fb.Int64Reader().vTableGet(buffer, rootOffset, 16, 0);
+      model: _entities[0],
+      toOneRelations: (Beacon object) => [],
+      toManyRelations: (Beacon object) => {},
+      getId: (Beacon object) => object.id,
+      setId: (Beacon object, int id) {
+        object.id = id;
+      },
+      objectToFB: (Beacon object, fb.Builder fbb) {
+        final uuidOffset = fbb.writeString(object.uuid);
+        final nameOffset = fbb.writeString(object.name);
+        fbb.startTable(9);
+        fbb.addOffset(0, uuidOffset);
+        fbb.addInt64(1, object.major);
+        fbb.addInt64(2, object.minor);
+        fbb.addInt64(3, object.txPower);
+        fbb.addInt64(4, object.advertiseMode);
+        fbb.addInt64(5, object.advertiseTxPower);
+        fbb.addInt64(6, object.id);
+        fbb.addOffset(7, nameOffset);
+        fbb.finish(fbb.endTable());
+        return object.id;
+      },
+      objectFromFB: (obx.Store store, ByteData fbData) {
+        final buffer = fb.BufferContext(fbData);
+        final rootOffset = buffer.derefObject(0);
+        final nameParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 18, '');
+        final uuidParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 4, '');
+        final majorParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          6,
+          0,
+        );
+        final minorParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          8,
+          0,
+        );
+        final txPowerParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          10,
+          0,
+        );
+        final advertiseModeParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          12,
+          0,
+        );
+        final advertiseTxPowerParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          14,
+          0,
+        );
+        final object = Beacon(
+          name: nameParam,
+          uuid: uuidParam,
+          major: majorParam,
+          minor: minorParam,
+          txPower: txPowerParam,
+          advertiseMode: advertiseModeParam,
+          advertiseTxPower: advertiseTxPowerParam,
+        )..id = const fb.Int64Reader().vTableGet(buffer, rootOffset, 16, 0);
 
-          return object;
-        })
+        return object;
+      },
+    ),
   };
 
   return obx_int.ModelDefinition(model, bindings);
@@ -178,34 +219,42 @@ obx_int.ModelDefinition getObjectBoxModel() {
 /// [Beacon] entity fields to define ObjectBox queries.
 class Beacon_ {
   /// See [Beacon.uuid].
-  static final uuid =
-      obx.QueryStringProperty<Beacon>(_entities[0].properties[0]);
+  static final uuid = obx.QueryStringProperty<Beacon>(
+    _entities[0].properties[0],
+  );
 
   /// See [Beacon.major].
-  static final major =
-      obx.QueryIntegerProperty<Beacon>(_entities[0].properties[1]);
+  static final major = obx.QueryIntegerProperty<Beacon>(
+    _entities[0].properties[1],
+  );
 
   /// See [Beacon.minor].
-  static final minor =
-      obx.QueryIntegerProperty<Beacon>(_entities[0].properties[2]);
+  static final minor = obx.QueryIntegerProperty<Beacon>(
+    _entities[0].properties[2],
+  );
 
   /// See [Beacon.txPower].
-  static final txPower =
-      obx.QueryIntegerProperty<Beacon>(_entities[0].properties[3]);
+  static final txPower = obx.QueryIntegerProperty<Beacon>(
+    _entities[0].properties[3],
+  );
 
   /// See [Beacon.advertiseMode].
-  static final advertiseMode =
-      obx.QueryIntegerProperty<Beacon>(_entities[0].properties[4]);
+  static final advertiseMode = obx.QueryIntegerProperty<Beacon>(
+    _entities[0].properties[4],
+  );
 
   /// See [Beacon.advertiseTxPower].
-  static final advertiseTxPower =
-      obx.QueryIntegerProperty<Beacon>(_entities[0].properties[5]);
+  static final advertiseTxPower = obx.QueryIntegerProperty<Beacon>(
+    _entities[0].properties[5],
+  );
 
   /// See [Beacon.id].
-  static final id =
-      obx.QueryIntegerProperty<Beacon>(_entities[0].properties[6]);
+  static final id = obx.QueryIntegerProperty<Beacon>(
+    _entities[0].properties[6],
+  );
 
   /// See [Beacon.name].
-  static final name =
-      obx.QueryStringProperty<Beacon>(_entities[0].properties[7]);
+  static final name = obx.QueryStringProperty<Beacon>(
+    _entities[0].properties[7],
+  );
 }

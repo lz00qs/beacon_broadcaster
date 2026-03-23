@@ -11,29 +11,13 @@ import 'bluetooth_ready_page.dart';
 import 'bluetooth_unauthorized_page.dart';
 import 'bluetooth_unsupported_page.dart';
 import 'models/beacon.dart';
-import 'objectbox.dart';
-
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  final container = ProviderContainer();
-  final objectbox = await ObjectBox.create();
-  container.read(beaconListProvider.notifier).state =
-      objectbox.beaconBox.getAll();
-  if (container.read(beaconListProvider.notifier).state.isEmpty) {
-    final beacon = Beacon(
-        name: 'Test Beacon',
-        uuid: '550e8400-e29b-41d4-a716-446655440000',
-        major: 0x66,
-        minor: 0x99,
-        txPower: 0);
-    container.read(beaconListProvider.notifier).state.add(beacon);
-    objectbox.beaconBox.put(beacon);
-  }
-  runApp(UncontrolledProviderScope(
-      container: container,
-      child: const MaterialApp(
-        home: MyApp(),
-      )));
+  runApp(const ProviderScope(
+    child: MaterialApp(
+      home: MyApp(),
+    ),
+  ));
 }
 
 class MyApp extends ConsumerWidget {
@@ -48,10 +32,7 @@ class MyApp extends ConsumerWidget {
           actions: [
             IconButton(
                 onPressed: () async {
-                  ref
-                      .read(beaconBroadcasterProvider.notifier)
-                      .state
-                      .stopAdvertising();
+                  ref.read(beaconBroadcasterProvider).stopAdvertising();
                   final newBeacon = await showDialog(
                       context: context,
                       builder: (BuildContext context) {
@@ -64,10 +45,9 @@ class MyApp extends ConsumerWidget {
                                 txPower: 0));
                       });
                   if (newBeacon != null) {
-                    final objectbox = ObjectBox.instance;
-                    objectbox.beaconBox.put(newBeacon);
-                    ref.read(beaconListProvider.notifier).state =
-                        objectbox.beaconBox.getAll();
+                    await ref
+                        .read(beaconListProvider.notifier)
+                        .addBeacon(newBeacon);
                   }
                 },
                 icon: const Icon(Icons.add)),
@@ -78,18 +58,21 @@ class MyApp extends ConsumerWidget {
             Switch(
               value: isToggle,
               onChanged: (value) =>
-                  ref.read(isToggleProvider.notifier).state = value,
+                  ref.read(isToggleProvider.notifier).set(value),
             ),
           ],
         ),
-        body: switch (bluetoothState) {
-          AsyncValue<BluetoothState>(:final value) => switch (value) {
-              BluetoothState.unknown => const BluetoothUnknownPage(),
-              BluetoothState.off => const BluetoothDisabledPage(),
-              BluetoothState.unsupported => const BluetoothUnsupportedPage(),
-              BluetoothState.unauthorized => const BluetoothUnauthorizedPage(),
-              _ => const BluetoothReadyPage(),
-            },
-        });
+        body: bluetoothState.when(
+          data: (value) => switch (value) {
+            BluetoothState.unknown => const BluetoothUnknownPage(),
+            BluetoothState.off => const BluetoothDisabledPage(),
+            BluetoothState.unsupported => const BluetoothUnsupportedPage(),
+            BluetoothState.unauthorized => const BluetoothUnauthorizedPage(),
+            _ => const BluetoothReadyPage(),
+          },
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, stackTrace) =>
+              const Center(child: Text('Failed to read bluetooth state')),
+        ));
   }
 }

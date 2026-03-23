@@ -14,25 +14,33 @@ class BluetoothReadyPage extends ConsumerWidget {
     final bluetoothState = ref.watch(bluetoothStateProvider);
     return Column(
       children: [
-        switch (bluetoothState) {
-          AsyncValue<BluetoothState>(:final value) =>
-            Text('Bluetooth state: $value'),
-        },
+        bluetoothState.when(
+          data: (value) => Text('Bluetooth state: $value'),
+          loading: () => const SizedBox.shrink(),
+          error: (error, stackTrace) =>
+              const Text('Bluetooth state: error'),
+        ),
         Expanded(
-            child: GridView.builder(
-          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-              maxCrossAxisExtent: 140, childAspectRatio: 1.0),
-          itemCount: beaconList.length,
-          itemBuilder: (context, index) {
-            return Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: BeaconItem(
-                  id: beaconList[index].id,
-                  beacon: beaconList[index],
-                  isToggle: isToggle),
-            );
-          },
-        ))
+          child: beaconList.when(
+            data: (beacons) => GridView.builder(
+              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                  maxCrossAxisExtent: 140, childAspectRatio: 1.0),
+              itemCount: beacons.length,
+              itemBuilder: (context, index) {
+                return Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: BeaconItem(
+                      id: beacons[index].id,
+                      beacon: beacons[index],
+                      isToggle: isToggle),
+                );
+              },
+            ),
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (error, stackTrace) =>
+                const Center(child: Text('Failed to load beacons')),
+          ),
+        )
       ],
     );
   }

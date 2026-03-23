@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-import '../objectbox.dart';
 import '../providers.dart';
 import 'beacon_edit_dialog.dart';
 
@@ -30,7 +29,6 @@ class BeaconItem extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final beaconBroadcaster = ref.watch(beaconBroadcasterProvider);
     final isPressed = useState(false);
-    ref.watch(beaconListProvider);
     return Container(
       width: 120,
       height: 120,
@@ -93,11 +91,8 @@ class BeaconItem extends HookConsumerWidget {
             right: 4,
             child: IconButton(
               icon: const Icon(Icons.more_horiz, color: Colors.white),
-              onPressed: () {
-                ref
-                    .read(beaconBroadcasterProvider.notifier)
-                    .state
-                    .stopAdvertising();
+            onPressed: () {
+                ref.read(beaconBroadcasterProvider).stopAdvertising();
                 showDialog(
                   context: context,
                   builder: (BuildContext context) {
@@ -116,10 +111,9 @@ class BeaconItem extends HookConsumerWidget {
                                     return BeaconEditDialog(beacon: beacon);
                                   });
                               if (editedBeacon != null) {
-                                final objectbox = ObjectBox.instance;
-                                objectbox.beaconBox.put(editedBeacon);
-                                ref.read(beaconListProvider.notifier).state =
-                                    objectbox.beaconBox.getAll();
+                                await ref
+                                    .read(beaconListProvider.notifier)
+                                    .updateBeacon(editedBeacon);
                               }
                             }),
                         TextButton(
@@ -144,16 +138,11 @@ class BeaconItem extends HookConsumerWidget {
                                             child: const Text('Delete',
                                                 style: TextStyle(
                                                     color: Colors.red)),
-                                            onPressed: () {
-                                              final objectbox =
-                                                  ObjectBox.instance;
-                                              objectbox.beaconBox
-                                                  .remove(beacon.id);
-                                              ref
-                                                      .read(beaconListProvider
-                                                          .notifier)
-                                                      .state =
-                                                  objectbox.beaconBox.getAll();
+                                            onPressed: () async {
+                                              await ref
+                                                  .read(beaconListProvider
+                                                      .notifier)
+                                                  .deleteBeacon(beacon.id);
                                               Navigator.of(context).pop();
                                               Navigator.of(context).pop();
                                             })
