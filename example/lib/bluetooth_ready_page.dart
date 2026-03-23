@@ -10,7 +10,7 @@ class BluetoothReadyPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final beaconList = ref.watch(beaconListProvider);
-    final isToggle = ref.watch(isToggleProvider);
+    final isToggle = ref.watch(toggleProvider);
     final bluetoothState = ref.watch(bluetoothStateProvider);
     return Column(
       children: [

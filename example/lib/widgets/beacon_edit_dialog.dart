@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:beacon_broadcaster/beacon_broadcaster.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_hooks/flutter_hooks.dart';
 
 import '../models/beacon.dart';
 
@@ -14,31 +13,62 @@ bool _isBeaconParamsValid(String uuid, int major, int minor, int txPower) {
       isTxPowerValid(txPower);
 }
 
-class BeaconEditDialog extends HookWidget {
+class BeaconEditDialog extends StatefulWidget {
   final Beacon beacon;
 
   const BeaconEditDialog({super.key, required this.beacon});
 
   @override
-  Widget build(BuildContext context) {
-    final nameController = useTextEditingController(text: beacon.name);
-    final uuidController = useTextEditingController(text: beacon.uuid);
-    final majorController =
-        useTextEditingController(text: beacon.major.toString());
-    final minorController =
-        useTextEditingController(text: beacon.minor.toString());
-    final txPowerController =
-        useTextEditingController(text: beacon.txPower.toString());
+  State<BeaconEditDialog> createState() => _BeaconEditDialogState();
+}
 
-    final name = useState(beacon.name);
-    final uuid = useState(beacon.uuid);
-    final major = useState(beacon.major);
-    final minor = useState(beacon.minor);
-    final txPower = useState(beacon.txPower);
-    final advertiseMode = useState(beacon.advertiseMode);
-    final advertiseTxPower = useState(beacon.advertiseTxPower);
-    final isValid =
-        _isBeaconParamsValid(uuid.value, major.value, minor.value, txPower.value);
+class _BeaconEditDialogState extends State<BeaconEditDialog> {
+  late final TextEditingController nameController;
+  late final TextEditingController uuidController;
+  late final TextEditingController majorController;
+  late final TextEditingController minorController;
+  late final TextEditingController txPowerController;
+
+  late String name;
+  late String uuid;
+  late int major;
+  late int minor;
+  late int txPower;
+  late int advertiseMode;
+  late int advertiseTxPower;
+
+  bool get isValid => _isBeaconParamsValid(uuid, major, minor, txPower);
+
+  @override
+  void initState() {
+    super.initState();
+    name = widget.beacon.name;
+    uuid = widget.beacon.uuid;
+    major = widget.beacon.major;
+    minor = widget.beacon.minor;
+    txPower = widget.beacon.txPower;
+    advertiseMode = widget.beacon.advertiseMode;
+    advertiseTxPower = widget.beacon.advertiseTxPower;
+
+    nameController = TextEditingController(text: name);
+    uuidController = TextEditingController(text: uuid);
+    majorController = TextEditingController(text: major.toString());
+    minorController = TextEditingController(text: minor.toString());
+    txPowerController = TextEditingController(text: txPower.toString());
+  }
+
+  @override
+  void dispose() {
+    nameController.dispose();
+    uuidController.dispose();
+    majorController.dispose();
+    minorController.dispose();
+    txPowerController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return AlertDialog(
       title: const Text('Beacon Info'),
       content: Scrollbar(
@@ -48,22 +78,26 @@ class BeaconEditDialog extends HookWidget {
           TextField(
             decoration: const InputDecoration(labelText: 'Name'),
             controller: nameController,
-            onChanged: (value) => name.value = value,
+            onChanged: (value) => setState(() {
+              name = value;
+            }),
           ),
           TextField(
             decoration: InputDecoration(
                 labelText: 'UUID',
                 hintText: '550e8400-e29b-41d4-a716-446655440000',
-                errorText: isUuidValid(uuid.value)
+                errorText: isUuidValid(uuid)
                     ? null
                     : 'Invalid UUID, format: 4-2-2-2-6 hex bytes'),
             controller: uuidController,
-            onChanged: (value) => uuid.value = value,
+            onChanged: (value) => setState(() {
+              uuid = value;
+            }),
           ),
           TextField(
             decoration: InputDecoration(
                 labelText: 'Major',
-                errorText: isMajorOrMinorValid(major.value)
+                errorText: isMajorOrMinorValid(major)
                     ? null
                     : 'Invalid Major'),
             keyboardType: TextInputType.number,
@@ -72,12 +106,14 @@ class BeaconEditDialog extends HookWidget {
               FilteringTextInputFormatter.digitsOnly, // 只允许输入数字
             ],
             controller: majorController,
-            onChanged: (value) => major.value = int.tryParse(value) ?? -1,
+            onChanged: (value) => setState(() {
+              major = int.tryParse(value) ?? -1;
+            }),
           ),
           TextField(
             decoration: InputDecoration(
                 labelText: 'Minor',
-                errorText: isMajorOrMinorValid(minor.value)
+                errorText: isMajorOrMinorValid(minor)
                     ? null
                     : 'Invalid Minor'),
             keyboardType: TextInputType.number,
@@ -85,12 +121,14 @@ class BeaconEditDialog extends HookWidget {
               FilteringTextInputFormatter.digitsOnly, // 只允许输入数字
             ],
             controller: minorController,
-            onChanged: (value) => minor.value = int.tryParse(value) ?? -1,
+            onChanged: (value) => setState(() {
+              minor = int.tryParse(value) ?? -1;
+            }),
           ),
           TextField(
             decoration: InputDecoration(
                 labelText: 'Tx Power',
-                errorText: isTxPowerValid(txPower.value)
+                errorText: isTxPowerValid(txPower)
                     ? null
                     : 'Invalid Tx Power'),
             keyboardType: TextInputType.number,
@@ -98,7 +136,9 @@ class BeaconEditDialog extends HookWidget {
               FilteringTextInputFormatter.digitsOnly, // 只允许输入数字
             ],
             controller: txPowerController,
-            onChanged: (value) => txPower.value = int.tryParse(value) ?? -1,
+            onChanged: (value) => setState(() {
+              txPower = int.tryParse(value) ?? -1;
+            }),
           ),
           Platform.isAndroid
               ? Row(
@@ -106,7 +146,7 @@ class BeaconEditDialog extends HookWidget {
                     const Text('Advertise Mode: '),
                     const Spacer(),
                     DropdownButton<int>(
-                        value: advertiseMode.value,
+                        value: advertiseMode,
                         items: const [
                           DropdownMenuItem(
                             value: AndroidBleAdvertiseSettings
@@ -126,7 +166,9 @@ class BeaconEditDialog extends HookWidget {
                         ],
                         onChanged: (value) {
                           if (value != null) {
-                            advertiseMode.value = value;
+                            setState(() {
+                              advertiseMode = value;
+                            });
                           }
                         }),
                   ],
@@ -138,7 +180,7 @@ class BeaconEditDialog extends HookWidget {
                     const Text('Advertise Tx Power: '),
                     const Spacer(),
                     DropdownButton<int>(
-                        value: advertiseTxPower.value,
+                        value: advertiseTxPower,
                         items: const [
                           DropdownMenuItem(
                             value: AndroidBleAdvertiseSettings
@@ -163,7 +205,9 @@ class BeaconEditDialog extends HookWidget {
                         ],
                         onChanged: (value) {
                           if (value != null) {
-                            advertiseTxPower.value = value;
+                            setState(() {
+                              advertiseTxPower = value;
+                            });
                           }
                         }),
                   ],
@@ -185,15 +229,15 @@ class BeaconEditDialog extends HookWidget {
           onPressed: () {
             if (isValid) {
               final newBeacon = Beacon(
-                name: name.value,
-                uuid: uuid.value,
-                major: major.value,
-                minor: minor.value,
-                txPower: txPower.value,
-                advertiseMode: advertiseMode.value,
-                advertiseTxPower: advertiseTxPower.value,
+                name: name,
+                uuid: uuid,
+                major: major,
+                minor: minor,
+                txPower: txPower,
+                advertiseMode: advertiseMode,
+                advertiseTxPower: advertiseTxPower,
               );
-              newBeacon.id = beacon.id;
+              newBeacon.id = widget.beacon.id;
               Navigator.of(context).pop(newBeacon);
             }
           },

@@ -26,7 +26,7 @@ class MyApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final bluetoothState = ref.watch(bluetoothStateProvider);
-    final isToggle = ref.watch(isToggleProvider);
+    final isToggle = ref.watch(toggleProvider);
     return Scaffold(
         appBar: AppBar(
           actions: [
@@ -58,7 +58,7 @@ class MyApp extends ConsumerWidget {
             Switch(
               value: isToggle,
               onChanged: (value) =>
-                  ref.read(isToggleProvider.notifier).set(value),
+                  ref.read(toggleProvider.notifier).set(value),
             ),
           ],
         ),

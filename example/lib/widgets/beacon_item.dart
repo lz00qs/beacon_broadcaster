@@ -1,7 +1,6 @@
 import 'package:beacon_broadcaster_example/models/beacon.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers.dart';
 import 'beacon_edit_dialog.dart';
@@ -13,7 +12,7 @@ class _BeaconItemColors {
   static const Color pressed = Color(0xFF1976D2);
 }
 
-class BeaconItem extends HookConsumerWidget {
+class BeaconItem extends ConsumerStatefulWidget {
   final Beacon beacon;
 
   final bool isToggle;
@@ -26,14 +25,20 @@ class BeaconItem extends HookConsumerWidget {
       required this.isToggle});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<BeaconItem> createState() => _BeaconItemState();
+}
+
+class _BeaconItemState extends ConsumerState<BeaconItem> {
+  bool _isPressed = false;
+
+  @override
+  Widget build(BuildContext context) {
     final beaconBroadcaster = ref.watch(beaconBroadcasterProvider);
-    final isPressed = useState(false);
     return Container(
       width: 120,
       height: 120,
       decoration: BoxDecoration(
-        color: isPressed.value
+        color: _isPressed
             ? _BeaconItemColors.pressed
             : _BeaconItemColors.selected,
         borderRadius: BorderRadius.circular(12),
@@ -44,41 +49,46 @@ class BeaconItem extends HookConsumerWidget {
             behavior: HitTestBehavior.translucent,
             onTapDown: (details) async {
               await beaconBroadcaster.stopAdvertising();
-              if (!isToggle) {
-                isPressed.value = true;
+              if (!widget.isToggle) {
+                setState(() {
+                  _isPressed = true;
+                });
                 await beaconBroadcaster.stopAdvertising();
                 await beaconBroadcaster.startAdvertising(
-                    uuid: beacon.uuid,
-                    major: beacon.major,
-                    minor: beacon.minor,
-                    txPower: beacon.txPower,
-                    advertiseMode: beacon.advertiseMode,
-                    advertiseTxPower: beacon.advertiseTxPower);
+                    uuid: widget.beacon.uuid,
+                    major: widget.beacon.major,
+                    minor: widget.beacon.minor,
+                    txPower: widget.beacon.txPower,
+                    advertiseMode: widget.beacon.advertiseMode,
+                    advertiseTxPower: widget.beacon.advertiseTxPower);
               } else {
-                // isPressed.value = !isPressed.value;
-                isPressed.value = !isPressed.value;
-                if (isPressed.value) {
+                setState(() {
+                  _isPressed = !_isPressed;
+                });
+                if (_isPressed) {
                   await beaconBroadcaster.startAdvertising(
-                      uuid: beacon.uuid,
-                      major: beacon.major,
-                      minor: beacon.minor,
-                      txPower: beacon.txPower,
-                      advertiseMode: beacon.advertiseMode,
-                      advertiseTxPower: beacon.advertiseTxPower);
+                      uuid: widget.beacon.uuid,
+                      major: widget.beacon.major,
+                      minor: widget.beacon.minor,
+                      txPower: widget.beacon.txPower,
+                      advertiseMode: widget.beacon.advertiseMode,
+                      advertiseTxPower: widget.beacon.advertiseTxPower);
                 } else {
                   await beaconBroadcaster.stopAdvertising();
                 }
               }
             },
             onTapUp: (details) {
-              if (!isToggle) {
-                isPressed.value = false;
+              if (!widget.isToggle) {
+                setState(() {
+                  _isPressed = false;
+                });
                 beaconBroadcaster.stopAdvertising();
               }
             },
             child: Center(
               child: Text(
-                beacon.name,
+                widget.beacon.name,
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: Theme.of(context).textTheme.titleSmall?.fontSize,
@@ -91,7 +101,7 @@ class BeaconItem extends HookConsumerWidget {
             right: 4,
             child: IconButton(
               icon: const Icon(Icons.more_horiz, color: Colors.white),
-            onPressed: () {
+              onPressed: () {
                 ref.read(beaconBroadcasterProvider).stopAdvertising();
                 showDialog(
                   context: context,
@@ -108,7 +118,8 @@ class BeaconItem extends HookConsumerWidget {
                               final editedBeacon = await showDialog(
                                   context: context,
                                   builder: (BuildContext context) {
-                                    return BeaconEditDialog(beacon: beacon);
+                                    return BeaconEditDialog(
+                                        beacon: widget.beacon);
                                   });
                               if (editedBeacon != null) {
                                 await ref
@@ -142,7 +153,8 @@ class BeaconItem extends HookConsumerWidget {
                                               await ref
                                                   .read(beaconListProvider
                                                       .notifier)
-                                                  .deleteBeacon(beacon.id);
+                                                  .deleteBeacon(
+                                                      widget.beacon.id);
                                               Navigator.of(context).pop();
                                               Navigator.of(context).pop();
                                             })

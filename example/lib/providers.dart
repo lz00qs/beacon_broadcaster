@@ -1,16 +1,23 @@
+import 'dart:async';
+
 import 'package:beacon_broadcaster/beacon_broadcaster.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:riverpod/riverpod.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import 'models/beacon.dart';
 import 'objectbox.dart';
 
-final objectBoxProvider = FutureProvider<ObjectBox>((ref) async {
-  return ObjectBox.create();
-});
+part 'providers.g.dart';
 
-class BeaconListNotifier extends AsyncNotifier<List<Beacon>> {
+@riverpod
+Future<ObjectBox> objectBox(Ref ref) async {
+  return ObjectBox.create();
+}
+
+@riverpod
+class BeaconList extends _$BeaconList {
   @override
-  Future<List<Beacon>> build() async {
+  FutureOr<List<Beacon>> build() async {
     final objectbox = await ref.watch(objectBoxProvider.future);
     final beacons = objectbox.beaconBox.getAll();
     if (beacons.isEmpty) {
@@ -46,25 +53,21 @@ class BeaconListNotifier extends AsyncNotifier<List<Beacon>> {
   }
 }
 
-final beaconListProvider =
-    AsyncNotifierProvider<BeaconListNotifier, List<Beacon>>(
-        BeaconListNotifier.new);
-
-class ToggleNotifier extends Notifier<bool> {
+@riverpod
+class Toggle extends _$Toggle {
   @override
   bool build() => false;
 
   void set(bool value) => state = value;
 }
 
-final isToggleProvider =
-    NotifierProvider<ToggleNotifier, bool>(ToggleNotifier.new);
+@riverpod
+BeaconBroadcaster beaconBroadcaster(Ref ref) {
+  return BeaconBroadcaster();
+}
 
-final beaconBroadcasterProvider =
-    Provider<BeaconBroadcaster>((ref) => BeaconBroadcaster());
-
-final bluetoothStateProvider =
-    StreamProvider.autoDispose<BluetoothState>((ref) {
+@riverpod
+Stream<BluetoothState> bluetoothState(Ref ref) {
   final beaconBroadcaster = ref.watch(beaconBroadcasterProvider);
   return beaconBroadcaster.bluetoothState.asBroadcastStream();
-});
+}
