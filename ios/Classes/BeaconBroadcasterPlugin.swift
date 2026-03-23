@@ -1,3 +1,5 @@
+import CoreBluetooth
+import CoreLocation
 import Flutter
 import UIKit
 
@@ -50,9 +52,13 @@ private final class LogStreamHandler: NSObject, FlutterStreamHandler {
   }
 }
 
-public class BeaconBroadcasterPlugin: NSObject, FlutterPlugin {
+public class BeaconBroadcasterPlugin: NSObject, FlutterPlugin, CLLocationManagerDelegate, CBPeripheralManagerDelegate {
   private let bluetoothStateHandler = BluetoothStateStreamHandler()
   private let logHandler = LogStreamHandler()
+  private let locationManager = CLLocationManager()
+  private let peripheralManager = CBPeripheralManager(delegate: nil, queue: nil)
+  private var isAdvertising = false
+  private var lastBeaconRegion: CLBeaconRegion?
 
   public static func register(with registrar: FlutterPluginRegistrar) {
     let methodChannel = FlutterMethodChannel(
@@ -82,23 +88,120 @@ public class BeaconBroadcasterPlugin: NSObject, FlutterPlugin {
       #if targetEnvironment(simulator)
       bluetoothStateHandler.eventSink?(BluetoothState.ready.rawValue)
       #else
-      bluetoothStateHandler.eventSink?(BluetoothState.unsupported.rawValue)
+      updateBluetoothState()
       #endif
       result(nil)
     case "startAdvertising":
       #if targetEnvironment(simulator)
       result(0)
       #else
-      result(FlutterError(code: "unimplemented", message: "iOS implementation not available.", details: nil))
+      startAdvertising(call: call, result: result)
       #endif
     case "stopAdvertising":
       #if targetEnvironment(simulator)
       result(0)
       #else
-      result(FlutterError(code: "unimplemented", message: "iOS implementation not available.", details: nil))
+      stopAdvertising(result: result)
       #endif
     default:
       result(FlutterMethodNotImplemented)
+    }
+  }
+
+  public override init() {
+    super.init()
+    locationManager.delegate = self
+    peripheralManager.delegate = self
+  }
+
+  private func updateBluetoothState() {
+    if !CLLocationManager.isMonitoringAvailable(for: CLBeaconRegion.self) {
+      bluetoothStateHandler.eventSink?(BluetoothState.unsupported.rawValue)
+      return
+    }
+    bluetoothStateHandler.eventSink?(isAdvertising ? BluetoothState.beaconing.rawValue : BluetoothState.ready.rawValue)
+  }
+
+  private func startAdvertising(call: FlutterMethodCall, result: @escaping FlutterResult) {
+    guard CLLocationManager.isMonitoringAvailable(for: CLBeaconRegion.self),
+          CLLocationManager.isRangingAvailable() else {
+      bluetoothStateHandler.eventSink?(BluetoothState.unsupported.rawValue)
+      result(FlutterError(code: "unsupported", message: "iBeacon not supported on this device.", details: nil))
+      return
+    }
+
+    guard let args = call.arguments as? [String: Any] else {
+      result(FlutterError(code: "invalid_args", message: "Missing parameters.", details: nil))
+      return
+    }
+
+    guard let uuidBytes = args["uuid"] as? FlutterStandardTypedData,
+          let major = args["major"] as? Int,
+          let minor = args["minor"] as? Int,
+          let txPower = args["txPower"] as? Int else {
+      result(FlutterError(code: "invalid_args", message: "Invalid parameters.", details: nil))
+      return
+    }
+
+    let uuidData = uuidBytes.data
+    guard uuidData.count == 16 else {
+      result(FlutterError(code: "invalid_args", message: "UUID must be 16 bytes.", details: nil))
+      return
+    }
+
+    let uuid = UUID(uuid: (
+      uuidData[0], uuidData[1], uuidData[2], uuidData[3],
+      uuidData[4], uuidData[5], uuidData[6], uuidData[7],
+      uuidData[8], uuidData[9], uuidData[10], uuidData[11],
+      uuidData[12], uuidData[13], uuidData[14], uuidData[15]
+    ))
+
+    let clUUID = UUID(uuid: uuid.uuid)
+    let identifier = "beacon_broadcaster"
+    let region = CLBeaconRegion(uuid: clUUID, major: CLBeaconMajorValue(major), minor: CLBeaconMinorValue(minor), identifier: identifier)
+    let payload = region.peripheralData(withMeasuredPower: NSNumber(value: txPower)) as? [String: Any]
+
+    guard let peripheralData = payload else {
+      result(FlutterError(code: "payload_error", message: "Failed to build iBeacon payload.", details: nil))
+      return
+    }
+
+    if peripheralManager.state != .poweredOn {
+      bluetoothStateHandler.eventSink?(BluetoothState.off.rawValue)
+      result(FlutterError(code: "bluetooth_off", message: "Bluetooth is not powered on.", details: nil))
+      return
+    }
+
+    peripheralManager.startAdvertising(peripheralData)
+    lastBeaconRegion = region
+    isAdvertising = true
+    bluetoothStateHandler.eventSink?(BluetoothState.beaconing.rawValue)
+    logHandler.eventSink?(["logLevel": "info", "message": "iBeacon advertising started."])
+    result(0)
+  }
+
+  private func stopAdvertising(result: @escaping FlutterResult) {
+    peripheralManager.stopAdvertising()
+    isAdvertising = false
+    bluetoothStateHandler.eventSink?(BluetoothState.ready.rawValue)
+    logHandler.eventSink?(["logLevel": "info", "message": "iBeacon advertising stopped."])
+    result(0)
+  }
+
+  public func peripheralManagerDidUpdateState(_ peripheral: CBPeripheralManager) {
+    switch peripheral.state {
+    case .poweredOn:
+      if !isAdvertising {
+        bluetoothStateHandler.eventSink?(BluetoothState.ready.rawValue)
+      }
+    case .poweredOff:
+      bluetoothStateHandler.eventSink?(BluetoothState.off.rawValue)
+    case .unauthorized:
+      bluetoothStateHandler.eventSink?(BluetoothState.unauthorized.rawValue)
+    case .unsupported:
+      bluetoothStateHandler.eventSink?(BluetoothState.unsupported.rawValue)
+    default:
+      bluetoothStateHandler.eventSink?(BluetoothState.unknown.rawValue)
     }
   }
 }
