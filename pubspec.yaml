@@ -1,7 +1,7 @@
 name: beacon_broadcaster
-description: "A new Flutter project."
+description: "Flutter plugin for broadcasting iBeacon packets on Android and iOS."
 version: 0.0.1
-homepage:
+homepage: https://pub.dev/packages/beacon_broadcaster
 
 environment:
   sdk: ^3.5.4

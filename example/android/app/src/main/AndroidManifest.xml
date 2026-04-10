@@ -10,7 +10,6 @@
          devices. -->
     <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />
 
-
     <application
         android:label="beacon_broadcaster_example"
         android:name="${applicationName}"

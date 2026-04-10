@@ -40,6 +40,8 @@ class MockBeaconBroadcasterPlatform
 }
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   final BeaconBroadcasterPlatform initialPlatform =
       BeaconBroadcasterPlatform.instance;
 
@@ -54,5 +56,21 @@ void main() {
     BeaconBroadcasterPlatform.instance = fakePlatform;
 
     expect(await beaconBroadcasterPlugin.getPlatformVersion(), '42');
+  });
+
+  test('major and minor support full uint16 range', () async {
+    final beaconBroadcasterPlugin = BeaconBroadcaster();
+    final fakePlatform = MockBeaconBroadcasterPlatform();
+    BeaconBroadcasterPlatform.instance = fakePlatform;
+
+    expect(
+      await beaconBroadcasterPlugin.startAdvertising(
+        uuid: '550e8400-e29b-41d4-a716-446655440000',
+        major: 65535,
+        minor: 65535,
+        txPower: -59,
+      ),
+      0,
+    );
   });
 }

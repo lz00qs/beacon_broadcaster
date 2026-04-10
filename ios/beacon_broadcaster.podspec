@@ -5,13 +5,13 @@
 Pod::Spec.new do |s|
   s.name             = 'beacon_broadcaster'
   s.version          = '0.0.1'
-  s.summary          = 'A new Flutter project.'
+  s.summary          = 'Flutter plugin for broadcasting iBeacon packets.'
   s.description      = <<-DESC
-A new Flutter project.
+Flutter plugin for broadcasting iBeacon packets on Android and iOS.
                        DESC
-  s.homepage         = 'http://example.com'
+  s.homepage         = 'https://pub.dev/packages/beacon_broadcaster'
   s.license          = { :file => '../LICENSE' }
-  s.author           = { 'Your Company' => 'email@example.com' }
+  s.author           = { 'beacon_broadcaster' => 'maintainers@pub.dev' }
   s.source           = { :path => '.' }
   s.source_files = 'Classes/**/*'
   s.dependency 'Flutter'
@@ -21,9 +21,5 @@ A new Flutter project.
   s.pod_target_xcconfig = { 'DEFINES_MODULE' => 'YES', 'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'i386' }
   s.swift_version = '5.0'
 
-  # If your plugin requires a privacy manifest, for example if it uses any
-  # required reason APIs, update the PrivacyInfo.xcprivacy file to describe your
-  # plugin's privacy impact, and then uncomment this line. For more information,
-  # see https://developer.apple.com/documentation/bundleresources/privacy_manifest_files
-  # s.resource_bundles = {'beacon_broadcaster_privacy' => ['Resources/PrivacyInfo.xcprivacy']}
+  s.resource_bundles = { 'beacon_broadcaster_privacy' => ['Resources/PrivacyInfo.xcprivacy'] }
 end

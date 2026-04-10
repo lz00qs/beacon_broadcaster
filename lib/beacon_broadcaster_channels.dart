@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:beacon_broadcaster/beacon_broadcaster.dart';
@@ -8,6 +9,8 @@ import 'beacon_broadcaster_platform_interface.dart';
 
 /// An implementation of [BeaconBroadcasterPlatform] that uses method channels.
 class ChannelsBeaconBroadcaster extends BeaconBroadcasterPlatform {
+  static StreamSubscription<dynamic>? _logSubscription;
+
   /// The method channel used to interact with the native platform.
   @visibleForTesting
   final methodChannel =
@@ -48,25 +51,32 @@ class ChannelsBeaconBroadcaster extends BeaconBroadcasterPlatform {
 
   @override
   void initializeLogger() {
-    logChannel.receiveBroadcastStream().listen((event) {
-      var iLogLevel = LogLevels.debug;
-      var message = '';
-      try {
-        final logLevelString = event['logLevel'] as String;
-        iLogLevel = LogLevels.values.firstWhere(
-          (level) => level.toString().split('.').last == logLevelString,
-        );
-        message = event['message'] as String;
-      } catch (e) {
-        iLogLevel = LogLevels.error;
-        message = 'Failed to parse log message: $event';
-      }
-      if (iLogLevel.index >= BeaconBroadcasterPlatform.logLevel.index) {
-        if (kDebugMode) {
-          print('Native [${iLogLevel.toString().split('.').last}]: $message');
+    if (_logSubscription != null) {
+      return;
+    }
+    try {
+      _logSubscription = logChannel.receiveBroadcastStream().listen((event) {
+        var iLogLevel = LogLevels.debug;
+        var message = '';
+        try {
+          final logLevelString = event['logLevel'] as String;
+          iLogLevel = LogLevels.values.firstWhere(
+            (level) => level.toString().split('.').last == logLevelString,
+          );
+          message = event['message'] as String;
+        } catch (e) {
+          iLogLevel = LogLevels.error;
+          message = 'Failed to parse log message: $event';
         }
-      }
-    });
+        if (iLogLevel.index >= BeaconBroadcasterPlatform.logLevel.index) {
+          if (kDebugMode) {
+            print('Native [${iLogLevel.toString().split('.').last}]: $message');
+          }
+        }
+      });
+    } catch (_) {
+      _logSubscription = null;
+    }
   }
 
   @override

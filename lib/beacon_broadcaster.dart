@@ -38,7 +38,7 @@ bool isUuidValid(String uuid) {
 }
 
 bool isMajorOrMinorValid(int value) {
-  return value >= 0 && value <= 255;
+  return value >= 0 && value <= 65535;
 }
 
 bool isTxPowerValid(int value) {
@@ -59,8 +59,13 @@ Uint8List uuidStringToBytes(String uuid) {
 }
 
 class BeaconBroadcaster {
+  static bool _loggerInitialized = false;
+
   BeaconBroadcaster() {
-    BeaconBroadcasterPlatform.instance.initializeLogger();
+    if (!_loggerInitialized) {
+      BeaconBroadcasterPlatform.instance.initializeLogger();
+      _loggerInitialized = true;
+    }
   }
 
   void setLogLevel(LogLevels level) {
@@ -93,13 +98,13 @@ class BeaconBroadcaster {
     } catch (e) {
       return Future.error(e);
     }
-    if (major < 0 || major > 255) {
+    if (!isMajorOrMinorValid(major)) {
       return Future.error('Invalid major');
     }
-    if (minor < 0 || minor > 255) {
+    if (!isMajorOrMinorValid(minor)) {
       return Future.error('Invalid minor');
     }
-    if (txPower < -127 || txPower > 127) {
+    if (!isTxPowerValid(txPower)) {
       return Future.error('Invalid txPower');
     }
     if (advertiseMode < 0 || advertiseMode > 2) {

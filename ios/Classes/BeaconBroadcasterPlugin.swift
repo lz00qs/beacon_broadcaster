@@ -21,14 +21,11 @@ private enum BluetoothState: String {
 
 private final class BluetoothStateStreamHandler: NSObject, FlutterStreamHandler {
   var eventSink: FlutterEventSink?
+  var onListen: (() -> Void)?
 
   func onListen(withArguments arguments: Any?, eventSink events: @escaping FlutterEventSink) -> FlutterError? {
     eventSink = events
-    #if targetEnvironment(simulator)
-    events(BluetoothState.ready.rawValue)
-    #else
-    events(BluetoothState.unsupported.rawValue)
-    #endif
+    onListen?()
     return nil
   }
 
@@ -112,14 +109,33 @@ public class BeaconBroadcasterPlugin: NSObject, FlutterPlugin, CLLocationManager
     super.init()
     locationManager.delegate = self
     peripheralManager.delegate = self
+    bluetoothStateHandler.onListen = { [weak self] in
+      self?.updateBluetoothState()
+    }
   }
 
   private func updateBluetoothState() {
+    #if targetEnvironment(simulator)
+    bluetoothStateHandler.eventSink?(BluetoothState.ready.rawValue)
+    return
+    #else
     if !CLLocationManager.isMonitoringAvailable(for: CLBeaconRegion.self) {
       bluetoothStateHandler.eventSink?(BluetoothState.unsupported.rawValue)
       return
     }
-    bluetoothStateHandler.eventSink?(isAdvertising ? BluetoothState.beaconing.rawValue : BluetoothState.ready.rawValue)
+    switch peripheralManager.state {
+    case .poweredOn:
+      bluetoothStateHandler.eventSink?(isAdvertising ? BluetoothState.beaconing.rawValue : BluetoothState.ready.rawValue)
+    case .poweredOff:
+      bluetoothStateHandler.eventSink?(BluetoothState.off.rawValue)
+    case .unauthorized:
+      bluetoothStateHandler.eventSink?(BluetoothState.unauthorized.rawValue)
+    case .unsupported:
+      bluetoothStateHandler.eventSink?(BluetoothState.unsupported.rawValue)
+    default:
+      bluetoothStateHandler.eventSink?(BluetoothState.unknown.rawValue)
+    }
+    #endif
   }
 
   private func startAdvertising(call: FlutterMethodCall, result: @escaping FlutterResult) {
