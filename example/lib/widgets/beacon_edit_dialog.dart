@@ -72,7 +72,6 @@ class _BeaconEditDialogState extends State<BeaconEditDialog> {
     return AlertDialog(
       title: const Text('Beacon Info'),
       content: Scrollbar(
-          // thumbVisibility: true,
           child: SingleChildScrollView(
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           TextField(
@@ -101,9 +100,8 @@ class _BeaconEditDialogState extends State<BeaconEditDialog> {
                     ? null
                     : 'Invalid Major'),
             keyboardType: TextInputType.number,
-            // 设置键盘类型为数字
             inputFormatters: [
-              FilteringTextInputFormatter.digitsOnly, // 只允许输入数字
+              FilteringTextInputFormatter.digitsOnly,
             ],
             controller: majorController,
             onChanged: (value) => setState(() {
@@ -118,7 +116,7 @@ class _BeaconEditDialogState extends State<BeaconEditDialog> {
                     : 'Invalid Minor'),
             keyboardType: TextInputType.number,
             inputFormatters: [
-              FilteringTextInputFormatter.digitsOnly, // 只允许输入数字
+              FilteringTextInputFormatter.digitsOnly,
             ],
             controller: minorController,
             onChanged: (value) => setState(() {
@@ -131,9 +129,9 @@ class _BeaconEditDialogState extends State<BeaconEditDialog> {
                 errorText: isTxPowerValid(txPower)
                     ? null
                     : 'Invalid Tx Power'),
-            keyboardType: TextInputType.number,
+            keyboardType: const TextInputType.numberWithOptions(signed: true),
             inputFormatters: [
-              FilteringTextInputFormatter.digitsOnly, // 只允许输入数字
+              FilteringTextInputFormatter.allow(RegExp(r'^-?\d*$')),
             ],
             controller: txPowerController,
             onChanged: (value) => setState(() {
@@ -144,33 +142,36 @@ class _BeaconEditDialogState extends State<BeaconEditDialog> {
               ? Row(
                   children: [
                     const Text('Advertise Mode: '),
-                    const Spacer(),
-                    DropdownButton<int>(
-                        value: advertiseMode,
-                        items: const [
-                          DropdownMenuItem(
-                            value: AndroidBleAdvertiseSettings
-                                .advertiseModeLowLatency,
-                            child: Text('Low Latency'),
-                          ),
-                          DropdownMenuItem(
-                            value: AndroidBleAdvertiseSettings
-                                .advertiseModeBalanced,
-                            child: Text('Balanced'),
-                          ),
-                          DropdownMenuItem(
-                            value: AndroidBleAdvertiseSettings
-                                .advertiseModeLowPower,
-                            child: Text('Low Power'),
-                          ),
-                        ],
-                        onChanged: (value) {
-                          if (value != null) {
-                            setState(() {
-                              advertiseMode = value;
-                            });
-                          }
-                        }),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: DropdownButton<int>(
+                          isExpanded: true,
+                          value: advertiseMode,
+                          items: const [
+                            DropdownMenuItem(
+                              value: AndroidBleAdvertiseSettings
+                                  .advertiseModeLowLatency,
+                              child: Text('Low Latency'),
+                            ),
+                            DropdownMenuItem(
+                              value: AndroidBleAdvertiseSettings
+                                  .advertiseModeBalanced,
+                              child: Text('Balanced'),
+                            ),
+                            DropdownMenuItem(
+                              value: AndroidBleAdvertiseSettings
+                                  .advertiseModeLowPower,
+                              child: Text('Low Power'),
+                            ),
+                          ],
+                          onChanged: (value) {
+                            if (value != null) {
+                              setState(() {
+                                advertiseMode = value;
+                              });
+                            }
+                          }),
+                    ),
                   ],
                 )
               : Container(),
@@ -178,38 +179,41 @@ class _BeaconEditDialogState extends State<BeaconEditDialog> {
               ? Row(
                   children: [
                     const Text('Advertise Tx Power: '),
-                    const Spacer(),
-                    DropdownButton<int>(
-                        value: advertiseTxPower,
-                        items: const [
-                          DropdownMenuItem(
-                            value: AndroidBleAdvertiseSettings
-                                .advertiseTxPowerUltraLow,
-                            child: Text('Ultra Low Power'),
-                          ),
-                          DropdownMenuItem(
-                            value: AndroidBleAdvertiseSettings
-                                .advertiseTxPowerLow,
-                            child: Text('Low Power'),
-                          ),
-                          DropdownMenuItem(
-                            value: AndroidBleAdvertiseSettings
-                                .advertiseTxPowerMedium,
-                            child: Text('Medium Power'),
-                          ),
-                          DropdownMenuItem(
-                            value: AndroidBleAdvertiseSettings
-                                .advertiseTxPowerHigh,
-                            child: Text('High Power'),
-                          ),
-                        ],
-                        onChanged: (value) {
-                          if (value != null) {
-                            setState(() {
-                              advertiseTxPower = value;
-                            });
-                          }
-                        }),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: DropdownButton<int>(
+                          isExpanded: true,
+                          value: advertiseTxPower,
+                          items: const [
+                            DropdownMenuItem(
+                              value: AndroidBleAdvertiseSettings
+                                  .advertiseTxPowerUltraLow,
+                              child: Text('Ultra Low Power'),
+                            ),
+                            DropdownMenuItem(
+                              value: AndroidBleAdvertiseSettings
+                                  .advertiseTxPowerLow,
+                              child: Text('Low Power'),
+                            ),
+                            DropdownMenuItem(
+                              value: AndroidBleAdvertiseSettings
+                                  .advertiseTxPowerMedium,
+                              child: Text('Medium Power'),
+                            ),
+                            DropdownMenuItem(
+                              value: AndroidBleAdvertiseSettings
+                                  .advertiseTxPowerHigh,
+                              child: Text('High Power'),
+                            ),
+                          ],
+                          onChanged: (value) {
+                            if (value != null) {
+                              setState(() {
+                                advertiseTxPower = value;
+                              });
+                            }
+                          }),
+                    ),
                   ],
                 )
               : Container(),
