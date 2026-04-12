@@ -1,7 +1,10 @@
 name: beacon_broadcaster
 description: "Flutter plugin for broadcasting iBeacon packets on Android and iOS."
-version: 0.0.1
-homepage: https://pub.dev/packages/beacon_broadcaster
+version: 0.1.0
+homepage: https://github.com/lz00qs/beacon_broadcaster
+repository: https://github.com/lz00qs/beacon_broadcaster
+issue_tracker: https://github.com/lz00qs/beacon_broadcaster/issues
+documentation: https://github.com/lz00qs/beacon_broadcaster#readme
 
 environment:
   sdk: ^3.5.4
