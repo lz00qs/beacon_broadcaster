@@ -145,22 +145,27 @@ class _BeaconItemState extends ConsumerState<BeaconItem> {
                                                     color: Colors.blue)),
                                             onPressed: () =>
                                                 Navigator.of(context).pop()),
-                                        TextButton(
-                                            child: const Text('Delete',
-                                                style: TextStyle(
-                                                    color: Colors.red)),
-                                            onPressed: () async {
-                                              await ref
-                                                  .read(beaconListProvider
-                                                      .notifier)
-                                                  .deleteBeacon(
-                                                      widget.beacon.id);
-                                              Navigator.of(context).pop();
-                                              Navigator.of(context).pop();
-                                            })
-                                      ],
-                                    );
-                                  });
+                                         TextButton(
+                                             child: const Text('Delete',
+                                                 style: TextStyle(
+                                                     color: Colors.red)),
+                                             onPressed: () async {
+                                               final confirmDialogNavigator =
+                                                   Navigator.of(context);
+                                               final menuDialogNavigator =
+                                                   Navigator.of(this.context);
+                                               await ref
+                                                   .read(beaconListProvider
+                                                       .notifier)
+                                                   .deleteBeacon(
+                                                       widget.beacon.id);
+                                               if (!mounted) return;
+                                               confirmDialogNavigator.pop();
+                                               menuDialogNavigator.pop();
+                                             })
+                                       ],
+                                     );
+                                   });
                             }),
                         TextButton(
                           child: const Text('Cancel'),

@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:beacon_broadcaster/beacon_broadcaster.dart';
-import 'package:riverpod/riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import 'models/beacon.dart';

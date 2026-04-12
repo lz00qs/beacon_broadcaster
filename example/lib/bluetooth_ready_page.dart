@@ -1,4 +1,3 @@
-import 'package:beacon_broadcaster/beacon_broadcaster.dart';
 import 'package:beacon_broadcaster_example/providers.dart';
 import 'package:beacon_broadcaster_example/widgets/beacon_item.dart';
 import 'package:flutter/material.dart';
