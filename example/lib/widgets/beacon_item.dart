@@ -71,11 +71,22 @@ class _BeaconItemState extends ConsumerState<BeaconItem> {
   @override
   Widget build(BuildContext context) {
     final beaconBroadcaster = ref.watch(beaconBroadcasterProvider);
+    final bluetoothState = ref.watch(bluetoothStateProvider);
+    final broadcastDurationMs = ref.watch(broadcastDurationMsProvider);
+    final activeBeaconId = ref.watch(activeBeaconIdProvider);
+    final isBeaconing = bluetoothState.when(
+      data: (value) => value == BluetoothState.beaconing,
+      loading: () => false,
+      error: (_, __) => false,
+    );
+    final isTogglePressed =
+        activeBeaconId == widget.beacon.id && isBeaconing;
+    final isPressed = widget.isToggle ? isTogglePressed : _isPressed;
     return Container(
       width: 120,
       height: 120,
       decoration: BoxDecoration(
-        color: _isPressed
+        color: isPressed
             ? _BeaconItemColors.pressed
             : _BeaconItemColors.selected,
         borderRadius: BorderRadius.circular(12),
@@ -97,20 +108,30 @@ class _BeaconItemState extends ConsumerState<BeaconItem> {
               behavior: HitTestBehavior.translucent,
               onTap: widget.isToggle
                   ? () async {
-                      setState(() {
-                        _isPressed = !_isPressed;
-                      });
-                      if (_isPressed) {
-                        await beaconBroadcaster.startAdvertising(
-                          uuid: widget.beacon.uuid,
-                          major: widget.beacon.major,
-                          minor: widget.beacon.minor,
-                          txPower: widget.beacon.txPower,
-                          advertiseMode: widget.beacon.advertiseMode,
-                          advertiseTxPower: widget.beacon.advertiseTxPower,
-                        );
-                      } else {
+                      final activeBeaconNotifier =
+                          ref.read(activeBeaconIdProvider.notifier);
+                      if (activeBeaconId == widget.beacon.id && isBeaconing) {
+                        activeBeaconNotifier.clear();
                         await beaconBroadcaster.stopAdvertising();
+                        return;
+                      }
+
+                      activeBeaconNotifier.clear();
+                      await beaconBroadcaster.stopAdvertising();
+                      final result = await beaconBroadcaster.startAdvertising(
+                        uuid: widget.beacon.uuid,
+                        major: widget.beacon.major,
+                        minor: widget.beacon.minor,
+                        txPower: widget.beacon.txPower,
+                        durationMs: broadcastDurationMs,
+                        advertiseMode: widget.beacon.advertiseMode,
+                        advertiseTxPower: widget.beacon.advertiseTxPower,
+                      );
+                      if (!mounted) return;
+                      if (result == 0) {
+                        activeBeaconNotifier.set(widget.beacon.id);
+                      } else {
+                        activeBeaconNotifier.clear();
                       }
                     }
                   : null,
@@ -131,6 +152,7 @@ class _BeaconItemState extends ConsumerState<BeaconItem> {
             child: IconButton(
               icon: const Icon(Icons.more_horiz, color: Colors.white),
               onPressed: () {
+                ref.read(activeBeaconIdProvider.notifier).clear();
                 ref.read(beaconBroadcasterProvider).stopAdvertising();
                 showDialog(
                   context: context,

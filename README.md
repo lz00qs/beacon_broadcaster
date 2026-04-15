@@ -16,7 +16,7 @@ Add the dependency to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  beacon_broadcaster: ^0.0.1
+  beacon_broadcaster: ^0.2.0
 ```
 
 Then run:
@@ -48,6 +48,7 @@ Future<void> startBeacon() async {
     major: 1,
     minor: 2,
     txPower: -59,
+    durationMs: 5000,
   );
 
   await Future<void>.delayed(const Duration(seconds: 5));
@@ -125,6 +126,7 @@ Parameters:
 - `major`: Required. Range `0..65535`.
 - `minor`: Required. Range `0..65535`.
 - `txPower`: Required. Range `-127..127`.
+- `durationMs`: Optional. Automatically stops advertising after the given duration in milliseconds.
 - `advertiseMode`: Optional Android-only setting.
 - `advertiseTxPower`: Optional Android-only setting.
 
@@ -153,6 +155,7 @@ Android advertising constants:
 Notes:
 
 - `advertiseMode` and `advertiseTxPower` are ignored on iOS.
+- `durationMs` is supported on both Android and iOS. When omitted, advertising continues until `stopAdvertising()` is called.
 - On Android, `BluetoothState.beaconing` is emitted from the native advertise callback after startup succeeds.
 - On iOS, `BluetoothState.beaconing` is emitted immediately after `startAdvertising()`.
 
@@ -224,6 +227,7 @@ await broadcaster.startAdvertising(
   major: 100,
   minor: 200,
   txPower: -59,
+  durationMs: 5000,
   advertiseMode: AndroidBleAdvertiseSettings.advertiseModeLowLatency,
   advertiseTxPower: AndroidBleAdvertiseSettings.advertiseTxPowerHigh,
 );

@@ -2,6 +2,28 @@
 
 Demonstrates how to use the beacon_broadcaster plugin.
 
+## Auto Stop Demo
+
+When the example app is in toggle mode, the ready page shows an `Auto stop duration`
+selector. Pick `3s`, `5s`, `10s`, or `Continuous`, then tap a beacon tile.
+
+The example forwards the selected value to:
+
+```dart
+await beaconBroadcaster.startAdvertising(
+  uuid: beacon.uuid,
+  major: beacon.major,
+  minor: beacon.minor,
+  txPower: beacon.txPower,
+  durationMs: selectedDurationMs,
+  advertiseMode: beacon.advertiseMode,
+  advertiseTxPower: beacon.advertiseTxPower,
+);
+```
+
+If a duration is selected, the plugin stops advertising automatically when the
+timer expires.
+
 ## Getting Started
 
 This project is a starting point for a Flutter application.

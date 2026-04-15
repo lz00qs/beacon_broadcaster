@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:beacon_broadcaster/beacon_broadcaster.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import 'models/beacon.dart';
@@ -70,3 +71,34 @@ Stream<BluetoothState> bluetoothState(Ref ref) {
   final beaconBroadcaster = ref.watch(beaconBroadcasterProvider);
   return beaconBroadcaster.bluetoothState.asBroadcastStream();
 }
+
+class BroadcastDurationNotifier extends Notifier<int?> {
+  @override
+  int? build() => 5000;
+
+  void set(int? durationMs) {
+    state = durationMs;
+  }
+}
+
+final broadcastDurationMsProvider =
+    NotifierProvider<BroadcastDurationNotifier, int?>(
+      BroadcastDurationNotifier.new,
+    );
+
+class ActiveBeaconIdNotifier extends Notifier<int?> {
+  @override
+  int? build() => null;
+
+  void set(int? beaconId) {
+    state = beaconId;
+  }
+
+  void clear() {
+    state = null;
+  }
+}
+
+final activeBeaconIdProvider = NotifierProvider<ActiveBeaconIdNotifier, int?>(
+  ActiveBeaconIdNotifier.new,
+);

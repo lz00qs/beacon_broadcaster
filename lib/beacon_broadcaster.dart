@@ -89,6 +89,7 @@ class BeaconBroadcaster {
       required int major,
       required int minor,
       required int txPower,
+      int? durationMs,
       int advertiseMode = AndroidBleAdvertiseSettings.advertiseModeBalanced,
       int advertiseTxPower =
           AndroidBleAdvertiseSettings.advertiseTxPowerMedium}) {
@@ -107,6 +108,9 @@ class BeaconBroadcaster {
     if (!isTxPowerValid(txPower)) {
       return Future.error('Invalid txPower');
     }
+    if (durationMs != null && durationMs <= 0) {
+      return Future.error('Invalid durationMs');
+    }
     if (advertiseMode < 0 || advertiseMode > 2) {
       return Future.error('Invalid advertiseMode');
     }
@@ -118,6 +122,7 @@ class BeaconBroadcaster {
         major: major,
         minor: minor,
         txPower: txPower,
+        durationMs: durationMs,
         advertiseMode: advertiseMode,
         advertiseTxPower: advertiseTxPower);
   }

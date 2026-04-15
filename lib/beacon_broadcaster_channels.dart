@@ -85,6 +85,7 @@ class ChannelsBeaconBroadcaster extends BeaconBroadcasterPlatform {
       required int major,
       required int minor,
       required int txPower,
+      required int? durationMs,
       required int advertiseMode,
       required int advertiseTxPower}) async {
     final parameters = <String, dynamic>{
@@ -92,6 +93,7 @@ class ChannelsBeaconBroadcaster extends BeaconBroadcasterPlatform {
       'major': major,
       'minor': minor,
       'txPower': txPower,
+      if (durationMs != null) 'durationMs': durationMs,
       // 'advertiseMode': advertiseMode,
       // 'advertiseTxPower': advertiseTxPower,
     };

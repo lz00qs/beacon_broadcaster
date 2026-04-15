@@ -49,6 +49,7 @@ abstract class BeaconBroadcasterPlatform extends PlatformInterface {
       required int major,
       required int minor,
       required int txPower,
+      required int? durationMs,
       required int advertiseMode,
       required int advertiseTxPower}) {
     throw UnimplementedError('startAdvertising() has not been implemented.');

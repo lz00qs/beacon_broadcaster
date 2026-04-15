@@ -56,6 +56,7 @@ public class BeaconBroadcasterPlugin: NSObject, FlutterPlugin, CLLocationManager
   private let peripheralManager = CBPeripheralManager(delegate: nil, queue: nil)
   private var isAdvertising = false
   private var lastBeaconRegion: CLBeaconRegion?
+  private var autoStopWorkItem: DispatchWorkItem?
 
   public static func register(with registrar: FlutterPluginRegistrar) {
     let methodChannel = FlutterMethodChannel(
@@ -159,6 +160,8 @@ public class BeaconBroadcasterPlugin: NSObject, FlutterPlugin, CLLocationManager
       return
     }
 
+    let durationMs = args["durationMs"] as? Int
+
     let uuidData = uuidBytes.data
     guard uuidData.count == 16 else {
       result(FlutterError(code: "invalid_args", message: "UUID must be 16 bytes.", details: nil))
@@ -188,20 +191,48 @@ public class BeaconBroadcasterPlugin: NSObject, FlutterPlugin, CLLocationManager
       return
     }
 
+    cancelAutoStop()
+    if isAdvertising {
+      peripheralManager.stopAdvertising()
+      isAdvertising = false
+    }
     peripheralManager.startAdvertising(peripheralData)
     lastBeaconRegion = region
     isAdvertising = true
+    scheduleAutoStop(durationMs: durationMs)
     bluetoothStateHandler.eventSink?(BluetoothState.beaconing.rawValue)
     logHandler.eventSink?(["logLevel": "info", "message": "iBeacon advertising started."])
     result(0)
   }
 
   private func stopAdvertising(result: @escaping FlutterResult) {
+    cancelAutoStop()
     peripheralManager.stopAdvertising()
     isAdvertising = false
-    bluetoothStateHandler.eventSink?(BluetoothState.ready.rawValue)
+    updateBluetoothState()
     logHandler.eventSink?(["logLevel": "info", "message": "iBeacon advertising stopped."])
     result(0)
+  }
+
+  private func scheduleAutoStop(durationMs: Int?) {
+    cancelAutoStop()
+    guard let durationMs, durationMs > 0 else {
+      return
+    }
+
+    let workItem = DispatchWorkItem { [weak self] in
+      self?.peripheralManager.stopAdvertising()
+      self?.isAdvertising = false
+      self?.updateBluetoothState()
+      self?.logHandler.eventSink?(["logLevel": "info", "message": "iBeacon advertising stopped automatically."])
+    }
+    autoStopWorkItem = workItem
+    DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(durationMs), execute: workItem)
+  }
+
+  private func cancelAutoStop() {
+    autoStopWorkItem?.cancel()
+    autoStopWorkItem = nil
   }
 
   public func peripheralManagerDidUpdateState(_ peripheral: CBPeripheralManager) {

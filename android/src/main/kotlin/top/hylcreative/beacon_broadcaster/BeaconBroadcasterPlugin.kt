@@ -12,6 +12,8 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import androidx.core.content.ContextCompat
 import androidx.core.content.ContextCompat.registerReceiver
 import io.flutter.embedding.engine.plugins.FlutterPlugin
@@ -57,6 +59,8 @@ class BeaconBroadcasterPlugin : FlutterPlugin, MethodCallHandler {
     private var bluetoothAdapter: BluetoothAdapter? = null
     private lateinit var applicationContext: Context
     private val beaconAdvertiseCallback = BeaconAdvertiseCallback()
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private var autoStopRunnable: Runnable? = null
 
     override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         applicationContext = binding.applicationContext
@@ -90,6 +94,7 @@ class BeaconBroadcasterPlugin : FlutterPlugin, MethodCallHandler {
                     val major = args["major"] as Int
                     val minor = args["minor"] as Int
                     val txPower = args["txPower"] as Int
+                    val durationMs = args["durationMs"] as Int?
                     val advertiseMode = args["advertiseMode"] as Int
                     val advertiseTxPower = args["advertiseTxPower"] as Int
                     result.success(
@@ -98,6 +103,7 @@ class BeaconBroadcasterPlugin : FlutterPlugin, MethodCallHandler {
                             major = major,
                             minor = minor,
                             txPower = txPower,
+                            durationMs = durationMs,
                             advertiseMode = advertiseMode,
                             advertiseTxPower = advertiseTxPower
                         )
@@ -144,9 +150,11 @@ class BeaconBroadcasterPlugin : FlutterPlugin, MethodCallHandler {
         major: Int,
         minor: Int,
         txPower: Int,
+        durationMs: Int?,
         advertiseMode: Int,
         advertiseTxPower: Int,
     ): Int {
+        clearAutoStop()
         if (!applicationContext.packageManager.hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
             bluetoothStateEventSink?.success(BluetoothState.UNSUPPORTED.nameString)
             logE("BLE advertising is not supported on this device.")
@@ -194,19 +202,42 @@ class BeaconBroadcasterPlugin : FlutterPlugin, MethodCallHandler {
             .addManufacturerData(0x004c, payload)
             .build()
 
+        // Android returns ADVERTISE_FAILED_ALREADY_STARTED if a previous
+        // advertising session is still active with the same callback.
+        advertiser.stopAdvertising(beaconAdvertiseCallback)
         advertiser.startAdvertising(settings, data, beaconAdvertiseCallback)
+        scheduleAutoStop(durationMs)
         return 0
     }
 
     private fun stopAdvertising(): Int {
+        clearAutoStop()
         if (!hasAdvertisePermission()) {
             bluetoothStateEventSink?.success(BluetoothState.UNAUTHORIZED.nameString)
             logE("Missing BLUETOOTH_ADVERTISE permission.")
             return -1
         }
         bluetoothAdapter?.bluetoothLeAdvertiser?.stopAdvertising(beaconAdvertiseCallback)
-        bluetoothStateEventSink?.success(BluetoothState.READY.nameString)
+        checkBluetoothState()
         return 0
+    }
+
+    private fun scheduleAutoStop(durationMs: Int?) {
+        clearAutoStop()
+        if (durationMs == null) {
+            return
+        }
+
+        autoStopRunnable =
+            Runnable {
+                stopAdvertising()
+            }
+        mainHandler.postDelayed(autoStopRunnable!!, durationMs.toLong())
+    }
+
+    private fun clearAutoStop() {
+        autoStopRunnable?.let { mainHandler.removeCallbacks(it) }
+        autoStopRunnable = null
     }
 
     private fun checkBluetoothPermissions(): Boolean {
@@ -254,6 +285,7 @@ class BeaconBroadcasterPlugin : FlutterPlugin, MethodCallHandler {
 
         override fun onStartFailure(errorCode: Int) {
             super.onStartFailure(errorCode)
+            clearAutoStop()
             logE("onStartFailure: $errorCode")
             bluetoothStateEventSink?.success(BluetoothState.ERROR.nameString)
         }
