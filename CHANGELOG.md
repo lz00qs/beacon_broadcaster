@@ -1,3 +1,8 @@
+## 0.1.1
+
+- Raise Android Java and Kotlin compilation targets from 8 to 17.
+- Remove deprecated source/target compatibility warnings during Android builds.
+
 ## 0.1.0
 
 - Initial public release.
