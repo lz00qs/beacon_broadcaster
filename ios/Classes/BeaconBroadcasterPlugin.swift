@@ -49,10 +49,9 @@ private final class LogStreamHandler: NSObject, FlutterStreamHandler {
   }
 }
 
-public class BeaconBroadcasterPlugin: NSObject, FlutterPlugin, CLLocationManagerDelegate, CBPeripheralManagerDelegate {
+public class BeaconBroadcasterPlugin: NSObject, FlutterPlugin, CBPeripheralManagerDelegate {
   private let bluetoothStateHandler = BluetoothStateStreamHandler()
   private let logHandler = LogStreamHandler()
-  private let locationManager = CLLocationManager()
   private let peripheralManager = CBPeripheralManager(delegate: nil, queue: nil)
   private var isAdvertising = false
   private var lastBeaconRegion: CLBeaconRegion?
@@ -108,10 +107,41 @@ public class BeaconBroadcasterPlugin: NSObject, FlutterPlugin, CLLocationManager
 
   public override init() {
     super.init()
-    locationManager.delegate = self
     peripheralManager.delegate = self
     bluetoothStateHandler.onListen = { [weak self] in
       self?.updateBluetoothState()
+    }
+  }
+
+  private func bluetoothState(for peripheralState: CBManagerState) -> BluetoothState {
+    switch peripheralState {
+    case .poweredOn:
+      return isAdvertising ? .beaconing : .ready
+    case .poweredOff:
+      return .off
+    case .unauthorized:
+      return .unauthorized
+    case .unsupported:
+      return .unsupported
+    default:
+      return .unknown
+    }
+  }
+
+  private func emitBluetoothState() {
+    bluetoothStateHandler.eventSink?(bluetoothState(for: peripheralManager.state).rawValue)
+  }
+
+  private func bluetoothUnavailableError(for peripheralState: CBManagerState) -> FlutterError {
+    switch peripheralState {
+    case .poweredOff:
+      return FlutterError(code: "bluetooth_off", message: "Bluetooth is not powered on.", details: nil)
+    case .unauthorized:
+      return FlutterError(code: "bluetooth_unauthorized", message: "Bluetooth permission is not authorized.", details: nil)
+    case .unsupported:
+      return FlutterError(code: "unsupported", message: "Bluetooth advertising is not supported on this device.", details: nil)
+    default:
+      return FlutterError(code: "bluetooth_unavailable", message: "Bluetooth is not ready to advertise.", details: bluetoothState(for: peripheralState).rawValue)
     }
   }
 
@@ -120,33 +150,11 @@ public class BeaconBroadcasterPlugin: NSObject, FlutterPlugin, CLLocationManager
     bluetoothStateHandler.eventSink?(BluetoothState.ready.rawValue)
     return
     #else
-    if !CLLocationManager.isMonitoringAvailable(for: CLBeaconRegion.self) {
-      bluetoothStateHandler.eventSink?(BluetoothState.unsupported.rawValue)
-      return
-    }
-    switch peripheralManager.state {
-    case .poweredOn:
-      bluetoothStateHandler.eventSink?(isAdvertising ? BluetoothState.beaconing.rawValue : BluetoothState.ready.rawValue)
-    case .poweredOff:
-      bluetoothStateHandler.eventSink?(BluetoothState.off.rawValue)
-    case .unauthorized:
-      bluetoothStateHandler.eventSink?(BluetoothState.unauthorized.rawValue)
-    case .unsupported:
-      bluetoothStateHandler.eventSink?(BluetoothState.unsupported.rawValue)
-    default:
-      bluetoothStateHandler.eventSink?(BluetoothState.unknown.rawValue)
-    }
+    emitBluetoothState()
     #endif
   }
 
   private func startAdvertising(call: FlutterMethodCall, result: @escaping FlutterResult) {
-    guard CLLocationManager.isMonitoringAvailable(for: CLBeaconRegion.self),
-          CLLocationManager.isRangingAvailable() else {
-      bluetoothStateHandler.eventSink?(BluetoothState.unsupported.rawValue)
-      result(FlutterError(code: "unsupported", message: "iBeacon not supported on this device.", details: nil))
-      return
-    }
-
     guard let args = call.arguments as? [String: Any] else {
       result(FlutterError(code: "invalid_args", message: "Missing parameters.", details: nil))
       return
@@ -186,8 +194,9 @@ public class BeaconBroadcasterPlugin: NSObject, FlutterPlugin, CLLocationManager
     }
 
     if peripheralManager.state != .poweredOn {
-      bluetoothStateHandler.eventSink?(BluetoothState.off.rawValue)
-      result(FlutterError(code: "bluetooth_off", message: "Bluetooth is not powered on.", details: nil))
+      let state = bluetoothState(for: peripheralManager.state)
+      bluetoothStateHandler.eventSink?(state.rawValue)
+      result(bluetoothUnavailableError(for: peripheralManager.state))
       return
     }
 
@@ -236,19 +245,6 @@ public class BeaconBroadcasterPlugin: NSObject, FlutterPlugin, CLLocationManager
   }
 
   public func peripheralManagerDidUpdateState(_ peripheral: CBPeripheralManager) {
-    switch peripheral.state {
-    case .poweredOn:
-      if !isAdvertising {
-        bluetoothStateHandler.eventSink?(BluetoothState.ready.rawValue)
-      }
-    case .poweredOff:
-      bluetoothStateHandler.eventSink?(BluetoothState.off.rawValue)
-    case .unauthorized:
-      bluetoothStateHandler.eventSink?(BluetoothState.unauthorized.rawValue)
-    case .unsupported:
-      bluetoothStateHandler.eventSink?(BluetoothState.unsupported.rawValue)
-    default:
-      bluetoothStateHandler.eventSink?(BluetoothState.unknown.rawValue)
-    }
+    emitBluetoothState()
   }
 }
