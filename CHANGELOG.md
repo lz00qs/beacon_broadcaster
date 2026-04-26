@@ -1,3 +1,8 @@
+## 0.2.1
+
+- Fix iOS Bluetooth state checks to rely on `CBPeripheralManager` instead of Core Location region monitoring availability.
+- Avoid reporting location or region monitoring unavailability as unsupported Bluetooth when broadcasting iBeacon packets.
+
 ## 0.2.0
 
 - Add optional `durationMs` support to stop advertising automatically after a specified duration on Android and iOS.
