@@ -2,6 +2,7 @@
 
 - Fix iOS Bluetooth state checks to rely on `CBPeripheralManager` instead of Core Location region monitoring availability.
 - Avoid reporting location or region monitoring unavailability as unsupported Bluetooth when broadcasting iBeacon packets.
+- Improve public API documentation coverage for pub.dev scoring.
 
 ## 0.2.0
 

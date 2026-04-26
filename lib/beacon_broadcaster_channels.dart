@@ -16,10 +16,12 @@ class ChannelsBeaconBroadcaster extends BeaconBroadcasterPlatform {
   final methodChannel =
       const MethodChannel('beacon_broadcaster/method_channel');
 
+  /// The event channel used to receive Bluetooth state changes.
   @visibleForTesting
   final bluetoothStateChannel =
       const EventChannel('beacon_broadcaster/bluetooth_state');
 
+  /// The event channel used to receive native log messages.
   @visibleForTesting
   final logChannel = const EventChannel('beacon_broadcaster/log');
 
