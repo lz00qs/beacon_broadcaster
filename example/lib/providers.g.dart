@@ -9,38 +9,41 @@ part of 'providers.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 
-@ProviderFor(objectBox)
-final objectBoxProvider = ObjectBoxProvider._();
+@ProviderFor(beaconRepository)
+final beaconRepositoryProvider = BeaconRepositoryProvider._();
 
-final class ObjectBoxProvider extends $FunctionalProvider<AsyncValue<ObjectBox>,
-        ObjectBox, FutureOr<ObjectBox>>
-    with $FutureModifier<ObjectBox>, $FutureProvider<ObjectBox> {
-  ObjectBoxProvider._()
+final class BeaconRepositoryProvider extends $FunctionalProvider<
+        AsyncValue<BeaconRepository>,
+        BeaconRepository,
+        FutureOr<BeaconRepository>>
+    with $FutureModifier<BeaconRepository>, $FutureProvider<BeaconRepository> {
+  BeaconRepositoryProvider._()
       : super(
           from: null,
           argument: null,
           retry: null,
-          name: r'objectBoxProvider',
+          name: r'beaconRepositoryProvider',
           isAutoDispose: true,
           dependencies: null,
           $allTransitiveDependencies: null,
         );
 
   @override
-  String debugGetCreateSourceHash() => _$objectBoxHash();
+  String debugGetCreateSourceHash() => _$beaconRepositoryHash();
 
   @$internal
   @override
-  $FutureProviderElement<ObjectBox> $createElement($ProviderPointer pointer) =>
+  $FutureProviderElement<BeaconRepository> $createElement(
+          $ProviderPointer pointer) =>
       $FutureProviderElement(pointer);
 
   @override
-  FutureOr<ObjectBox> create(Ref ref) {
-    return objectBox(ref);
+  FutureOr<BeaconRepository> create(Ref ref) {
+    return beaconRepository(ref);
   }
 }
 
-String _$objectBoxHash() => r'80521c0be98f4ad02062b4a21262deaa7b2ce9ef';
+String _$beaconRepositoryHash() => r'7615d2adc7b3c6a5eedb008cf5515a9e1ed3af98';
 
 @ProviderFor(BeaconList)
 final beaconListProvider = BeaconListProvider._();
@@ -66,7 +69,7 @@ final class BeaconListProvider
   BeaconList create() => BeaconList();
 }
 
-String _$beaconListHash() => r'c34a2209f8680e1eaf0a1e7c318a6f481b376714';
+String _$beaconListHash() => r'cccbd2496e3313c67fd492fcef687c22d22be395';
 
 abstract class _$BeaconList extends $AsyncNotifier<List<Beacon>> {
   FutureOr<List<Beacon>> build();

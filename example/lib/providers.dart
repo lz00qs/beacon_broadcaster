@@ -4,22 +4,22 @@ import 'package:beacon_broadcaster/beacon_broadcaster.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import 'beacon_repository.dart';
 import 'models/beacon.dart';
-import 'objectbox.dart';
 
 part 'providers.g.dart';
 
 @riverpod
-Future<ObjectBox> objectBox(Ref ref) async {
-  return ObjectBox.create();
+Future<BeaconRepository> beaconRepository(Ref ref) async {
+  return BeaconRepository.create();
 }
 
 @riverpod
 class BeaconList extends _$BeaconList {
   @override
   FutureOr<List<Beacon>> build() async {
-    final objectbox = await ref.watch(objectBoxProvider.future);
-    final beacons = objectbox.beaconBox.getAll();
+    final repository = await ref.watch(beaconRepositoryProvider.future);
+    final beacons = await repository.getAll();
     if (beacons.isEmpty) {
       final beacon = Beacon(
         name: 'Test Beacon',
@@ -28,28 +28,24 @@ class BeaconList extends _$BeaconList {
         minor: 0x99,
         txPower: 0,
       );
-      objectbox.beaconBox.put(beacon);
-      return [beacon];
+      return repository.put(beacon);
     }
     return beacons;
   }
 
   Future<void> addBeacon(Beacon beacon) async {
-    final objectbox = await ref.read(objectBoxProvider.future);
-    objectbox.beaconBox.put(beacon);
-    state = AsyncData(objectbox.beaconBox.getAll());
+    final repository = await ref.read(beaconRepositoryProvider.future);
+    state = AsyncData(await repository.put(beacon));
   }
 
   Future<void> updateBeacon(Beacon beacon) async {
-    final objectbox = await ref.read(objectBoxProvider.future);
-    objectbox.beaconBox.put(beacon);
-    state = AsyncData(objectbox.beaconBox.getAll());
+    final repository = await ref.read(beaconRepositoryProvider.future);
+    state = AsyncData(await repository.put(beacon));
   }
 
   Future<void> deleteBeacon(int id) async {
-    final objectbox = await ref.read(objectBoxProvider.future);
-    objectbox.beaconBox.remove(id);
-    state = AsyncData(objectbox.beaconBox.getAll());
+    final repository = await ref.read(beaconRepositoryProvider.future);
+    state = AsyncData(await repository.remove(id));
   }
 }
 
@@ -83,8 +79,8 @@ class BroadcastDurationNotifier extends Notifier<int?> {
 
 final broadcastDurationMsProvider =
     NotifierProvider<BroadcastDurationNotifier, int?>(
-      BroadcastDurationNotifier.new,
-    );
+  BroadcastDurationNotifier.new,
+);
 
 class ActiveBeaconIdNotifier extends Notifier<int?> {
   @override

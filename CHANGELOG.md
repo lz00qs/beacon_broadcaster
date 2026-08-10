@@ -1,3 +1,11 @@
+## 0.2.2
+
+- Keep the package, iOS podspec, and example dependency metadata on the same version.
+- Add iOS Swift Package Manager support while retaining CocoaPods compatibility.
+- Raise the minimum iOS deployment target to 15.0.
+- Compile and target Android API 36, using AGP 8.13.1, Gradle 8.14, and Kotlin 2.2.20 to meet the latest Google Play submission requirement.
+- Replace the example's ObjectBox storage with a lightweight JSON repository so all of its iOS plugins support Swift Package Manager.
+
 ## 0.2.1
 
 - Fix iOS Bluetooth state checks to rely on `CBPeripheralManager` instead of Core Location region monitoring availability.

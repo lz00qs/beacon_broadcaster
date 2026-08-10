@@ -16,7 +16,7 @@ Add the dependency to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  beacon_broadcaster: ^0.2.0
+  beacon_broadcaster: ^0.2.2
 ```
 
 Then run:
@@ -255,6 +255,10 @@ if (!isTxPowerValid(-59)) {
 
 ## Android Configuration
 
+The plugin requires Android 12 (API level 31) or later. Host applications
+should compile and target Android 16 (API level 36) to satisfy the Google Play
+submission requirement effective August 31, 2026.
+
 The plugin declares these permissions in the plugin manifest:
 
 - `android.permission.BLUETOOTH` with `maxSdkVersion="30"`
@@ -306,6 +310,9 @@ Important platform behavior:
 - If Bluetooth is off on Android 11 and below, advertising fails and the plugin emits `BluetoothState.off`.
 
 ## iOS Configuration
+
+The plugin requires iOS 15.0 or later and supports both Swift Package Manager
+and CocoaPods integration.
 
 ### Required `Info.plist` entries
 
