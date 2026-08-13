@@ -16,7 +16,7 @@ Add the dependency to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  beacon_broadcaster: ^0.2.2
+  beacon_broadcaster: ^0.2.3
 ```
 
 Then run:

@@ -4,7 +4,7 @@
 #
 Pod::Spec.new do |s|
   s.name             = 'beacon_broadcaster'
-  s.version          = '0.2.2'
+  s.version          = '0.2.3'
   s.summary          = 'Flutter plugin for broadcasting iBeacon packets.'
   s.description      = <<-DESC
 Flutter plugin for broadcasting iBeacon packets on Android and iOS.

@@ -1,3 +1,8 @@
+## 0.2.3
+
+- Migrate the Android plugin and example app for Built-in Kotlin compatibility.
+- Raise the minimum supported SDK versions to Flutter 3.44 and Dart 3.12.
+
 ## 0.2.2
 
 - Keep the package, iOS podspec, and example dependency metadata on the same version.
