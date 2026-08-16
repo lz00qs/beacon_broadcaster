@@ -6,6 +6,7 @@ import android.bluetooth.BluetoothManager
 import android.bluetooth.le.AdvertiseCallback
 import android.bluetooth.le.AdvertiseData
 import android.bluetooth.le.AdvertiseSettings
+import android.bluetooth.le.BluetoothLeAdvertiser
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -58,9 +59,10 @@ class BeaconBroadcasterPlugin : FlutterPlugin, MethodCallHandler {
     private lateinit var bluetoothManager: BluetoothManager
     private var bluetoothAdapter: BluetoothAdapter? = null
     private lateinit var applicationContext: Context
-    private val beaconAdvertiseCallback = BeaconAdvertiseCallback()
     private val mainHandler = Handler(Looper.getMainLooper())
+    private val advertisingSession = AdvertisingSessionTracker<BeaconAdvertiseCallback>()
     private var autoStopRunnable: Runnable? = null
+    private var adapterStateChangedReceiver: BroadcastReceiver? = null
 
     override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         applicationContext = binding.applicationContext
@@ -120,7 +122,16 @@ class BeaconBroadcasterPlugin : FlutterPlugin, MethodCallHandler {
     }
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
+        clearAutoStop()
+        if (hasAdvertisePermission()) {
+            stopActiveAdvertising()
+        } else {
+            advertisingSession.clear()
+        }
+        unregisterAdapterStateChangedReceiver()
         methodChannel.setMethodCallHandler(null)
+        bluetoothStateChannel.setStreamHandler(null)
+        logChannel.setStreamHandler(null)
         bluetoothStateEventSink = null
         logEventSink = null
     }
@@ -135,11 +146,17 @@ class BeaconBroadcasterPlugin : FlutterPlugin, MethodCallHandler {
             return
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !hasConnectPermission()) {
-            bluetoothStateEventSink?.success(BluetoothState.READY.nameString)
+            val state =
+                if (advertisingSession.hasStarted) BluetoothState.BEACONING else BluetoothState.READY
+            bluetoothStateEventSink?.success(state.nameString)
             return
         }
         when (bluetoothAdapter?.isEnabled) {
-            true -> bluetoothStateEventSink?.success(BluetoothState.READY.nameString)
+            true -> {
+                val state =
+                    if (advertisingSession.hasStarted) BluetoothState.BEACONING else BluetoothState.READY
+                bluetoothStateEventSink?.success(state.nameString)
+            }
             false -> bluetoothStateEventSink?.success(BluetoothState.OFF.nameString)
             null -> bluetoothStateEventSink?.success(BluetoothState.UNKNOWN.nameString)
         }
@@ -154,7 +171,6 @@ class BeaconBroadcasterPlugin : FlutterPlugin, MethodCallHandler {
         advertiseMode: Int,
         advertiseTxPower: Int,
     ): Int {
-        clearAutoStop()
         if (!applicationContext.packageManager.hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
             bluetoothStateEventSink?.success(BluetoothState.UNSUPPORTED.nameString)
             logE("BLE advertising is not supported on this device.")
@@ -165,7 +181,7 @@ class BeaconBroadcasterPlugin : FlutterPlugin, MethodCallHandler {
             logE("Missing BLUETOOTH_ADVERTISE permission.")
             return -1
         }
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S && bluetoothAdapter?.isEnabled != true) {
+        if (hasConnectPermission() && bluetoothAdapter?.isEnabled != true) {
             bluetoothStateEventSink?.success(BluetoothState.OFF.nameString)
             logW("Bluetooth adapter is off.")
             return -1
@@ -173,7 +189,9 @@ class BeaconBroadcasterPlugin : FlutterPlugin, MethodCallHandler {
 
         val advertiser = bluetoothAdapter?.bluetoothLeAdvertiser
         if (advertiser == null) {
-            bluetoothStateEventSink?.success(BluetoothState.UNSUPPORTED.nameString)
+            val state =
+                if (hasConnectPermission()) BluetoothState.UNSUPPORTED else BluetoothState.UNKNOWN
+            bluetoothStateEventSink?.success(state.nameString)
             logE("Bluetooth LE advertiser is unavailable.")
             return -1
         }
@@ -202,27 +220,42 @@ class BeaconBroadcasterPlugin : FlutterPlugin, MethodCallHandler {
             .addManufacturerData(0x004c, payload)
             .build()
 
-        // Android returns ADVERTISE_FAILED_ALREADY_STARTED if a previous
-        // advertising session is still active with the same callback.
-        advertiser.stopAdvertising(beaconAdvertiseCallback)
-        advertiser.startAdvertising(settings, data, beaconAdvertiseCallback)
-        scheduleAutoStop(durationMs)
+        clearAutoStop()
+        stopActiveAdvertising(advertiser)
+
+        val advertiseCallback = BeaconAdvertiseCallback()
+        advertisingSession.begin(advertiseCallback)
+        try {
+            advertiser.startAdvertising(settings, data, advertiseCallback)
+        } catch (exception: Exception) {
+            advertisingSession.finish(advertiseCallback)
+            throw exception
+        }
+        scheduleAutoStop(durationMs, advertiseCallback)
         return 0
     }
 
     private fun stopAdvertising(): Int {
-        clearAutoStop()
         if (!hasAdvertisePermission()) {
             bluetoothStateEventSink?.success(BluetoothState.UNAUTHORIZED.nameString)
             logE("Missing BLUETOOTH_ADVERTISE permission.")
             return -1
         }
-        bluetoothAdapter?.bluetoothLeAdvertiser?.stopAdvertising(beaconAdvertiseCallback)
+        clearAutoStop()
+        stopActiveAdvertising()
         checkBluetoothState()
         return 0
     }
 
-    private fun scheduleAutoStop(durationMs: Int?) {
+    private fun stopActiveAdvertising(
+        advertiser: BluetoothLeAdvertiser? = bluetoothAdapter?.bluetoothLeAdvertiser,
+    ): Boolean {
+        val callback = advertisingSession.clear() ?: return false
+        advertiser?.stopAdvertising(callback)
+        return true
+    }
+
+    private fun scheduleAutoStop(durationMs: Int?, advertiseCallback: BeaconAdvertiseCallback) {
         clearAutoStop()
         if (durationMs == null) {
             return
@@ -230,7 +263,9 @@ class BeaconBroadcasterPlugin : FlutterPlugin, MethodCallHandler {
 
         autoStopRunnable =
             Runnable {
-                stopAdvertising()
+                if (advertisingSession.activeCallback === advertiseCallback) {
+                    stopAdvertising()
+                }
             }
         mainHandler.postDelayed(autoStopRunnable!!, durationMs.toLong())
     }
@@ -279,12 +314,20 @@ class BeaconBroadcasterPlugin : FlutterPlugin, MethodCallHandler {
     inner class BeaconAdvertiseCallback : AdvertiseCallback() {
         override fun onStartSuccess(settingsInEffect: AdvertiseSettings) {
             super.onStartSuccess(settingsInEffect)
+            if (!advertisingSession.markStarted(this)) {
+                logD("Ignoring a stale advertising success callback.")
+                return
+            }
             logD("onStartSuccess: $settingsInEffect")
             bluetoothStateEventSink?.success(BluetoothState.BEACONING.nameString)
         }
 
         override fun onStartFailure(errorCode: Int) {
             super.onStartFailure(errorCode)
+            if (!advertisingSession.finish(this)) {
+                logD("Ignoring a stale advertising failure callback: $errorCode")
+                return
+            }
             clearAutoStop()
             logE("onStartFailure: $errorCode")
             bluetoothStateEventSink?.success(BluetoothState.ERROR.nameString)
@@ -292,12 +335,11 @@ class BeaconBroadcasterPlugin : FlutterPlugin, MethodCallHandler {
     }
 
     inner class BluetoothStateStreamHandler : EventChannel.StreamHandler {
-        private lateinit var adapterStateChangedReceiver: BroadcastReceiver
-
         override fun onListen(arguments: Any?, events: EventSink?) {
+            unregisterAdapterStateChangedReceiver()
             bluetoothStateEventSink = events
             checkBluetoothState()
-            adapterStateChangedReceiver = object : BroadcastReceiver() {
+            val receiver = object : BroadcastReceiver() {
                 override fun onReceive(context: Context?, intent: Intent?) {
                     if (intent?.action != BluetoothAdapter.ACTION_STATE_CHANGED) {
                         return
@@ -312,7 +354,14 @@ class BeaconBroadcasterPlugin : FlutterPlugin, MethodCallHandler {
                             }
                         }
 
+                        BluetoothAdapter.STATE_TURNING_OFF -> {
+                            advertisingSession.clear()
+                            clearAutoStop()
+                        }
+
                         BluetoothAdapter.STATE_OFF -> {
+                            advertisingSession.clear()
+                            clearAutoStop()
                             events?.success(BluetoothState.OFF.nameString)
                         }
                     }
@@ -320,16 +369,22 @@ class BeaconBroadcasterPlugin : FlutterPlugin, MethodCallHandler {
             }
             registerReceiver(
                 applicationContext,
-                adapterStateChangedReceiver,
+                receiver,
                 IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED),
                 ContextCompat.RECEIVER_NOT_EXPORTED
             )
+            adapterStateChangedReceiver = receiver
         }
 
         override fun onCancel(arguments: Any?) {
-            applicationContext.unregisterReceiver(adapterStateChangedReceiver)
+            unregisterAdapterStateChangedReceiver()
             bluetoothStateEventSink = null
         }
+    }
+
+    private fun unregisterAdapterStateChangedReceiver() {
+        adapterStateChangedReceiver?.let { applicationContext.unregisterReceiver(it) }
+        adapterStateChangedReceiver = null
     }
 
     inner class LogStreamHandler : EventChannel.StreamHandler {

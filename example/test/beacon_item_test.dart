@@ -14,8 +14,7 @@ import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 class FakeBeaconBroadcasterPlatform
     with MockPlatformInterfaceMixin
     implements BeaconBroadcasterPlatform {
-  FakeBeaconBroadcasterPlatform({required Stream<BluetoothState> bluetoothState})
-      : _bluetoothState = bluetoothState;
+  FakeBeaconBroadcasterPlatform(this._bluetoothState);
 
   final Stream<BluetoothState> _bluetoothState;
 
@@ -133,8 +132,7 @@ void main() {
   setUp(() {
     originalPlatform = BeaconBroadcasterPlatform.instance;
     bluetoothStateController = StreamController<BluetoothState>.broadcast();
-    fakePlatform =
-        FakeBeaconBroadcasterPlatform(bluetoothState: bluetoothStateController.stream);
+    fakePlatform = FakeBeaconBroadcasterPlatform(bluetoothStateController.stream);
     BeaconBroadcasterPlatform.instance = fakePlatform;
   });
 

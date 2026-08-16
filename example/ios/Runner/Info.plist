@@ -28,14 +28,6 @@
 	<true/>
 	<key>NSBluetoothAlwaysUsageDescription</key>
 	<string>Bluetooth is required to broadcast iBeacon signals.</string>
-	<key>NSBluetoothPeripheralUsageDescription</key>
-	<string>Bluetooth is required to broadcast iBeacon signals.</string>
-	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>Used to broadcast and monitor iBeacon signals.</string>
-	<key>NSLocationAlwaysUsageDescription</key>
-	<string>Used to broadcast iBeacon signals in the background.</string>
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Used to broadcast iBeacon signals while the app is in use.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

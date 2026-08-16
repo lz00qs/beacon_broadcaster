@@ -95,7 +95,7 @@ class ChannelsBeaconBroadcaster extends BeaconBroadcasterPlatform {
       'major': major,
       'minor': minor,
       'txPower': txPower,
-      if (durationMs != null) 'durationMs': durationMs,
+      'durationMs': ?durationMs,
       // 'advertiseMode': advertiseMode,
       // 'advertiseTxPower': advertiseTxPower,
     };

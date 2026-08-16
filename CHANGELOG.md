@@ -1,3 +1,16 @@
+## 0.2.4
+
+- Make repeated stops and rapid payload replacements idempotent so inactive
+  native advertising sessions are not stopped again.
+- Isolate Android advertising callbacks and auto-stop timers per session so a
+  stale callback or timer cannot overwrite or stop a newer broadcast.
+- Report iOS advertising success and failure from the Core Bluetooth delegate
+  callback, and ignore stale results from superseded start requests.
+- Clear advertising state and timers when Bluetooth turns off, and clean up
+  Android advertising and state listeners when the Flutter engine detaches.
+- Refresh the setup guide and example permissions for the iOS 15.0 deployment
+  target, including the foreground-only iBeacon broadcasting limitation.
+
 ## 0.2.3
 
 - Migrate the Android plugin and example app for Built-in Kotlin compatibility.

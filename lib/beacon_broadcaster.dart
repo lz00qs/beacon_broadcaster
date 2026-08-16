@@ -144,7 +144,9 @@ class BeaconBroadcaster {
   /// that many milliseconds.
   ///
   /// [advertiseMode] and [advertiseTxPower] are Android-only settings and are
-  /// ignored on iOS.
+  /// ignored on iOS. A new request safely replaces any active request. Native
+  /// startup is asynchronous; listen to [bluetoothState] for
+  /// [BluetoothState.beaconing] or [BluetoothState.error].
   Future<int> startAdvertising(
       {required String uuid,
       required int major,
@@ -189,6 +191,8 @@ class BeaconBroadcaster {
   }
 
   /// Stops the active iBeacon advertising session.
+  ///
+  /// This operation is idempotent when there is no active or pending session.
   Future<int> stopAdvertising() {
     return BeaconBroadcasterPlatform.instance.stopAdvertising();
   }

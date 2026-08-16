@@ -16,7 +16,7 @@ Add the dependency to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  beacon_broadcaster: ^0.2.3
+  beacon_broadcaster: ^0.2.4
 ```
 
 Then run:
@@ -133,7 +133,7 @@ Parameters:
 Return value:
 
 - `0`: Request accepted.
-- `-1`: Native-side validation or startup failed.
+- `-1`: Synchronous native-side validation failed.
 
 Defaults:
 
@@ -156,12 +156,16 @@ Notes:
 
 - `advertiseMode` and `advertiseTxPower` are ignored on iOS.
 - `durationMs` is supported on both Android and iOS. When omitted, advertising continues until `stopAdvertising()` is called.
-- On Android, `BluetoothState.beaconing` is emitted from the native advertise callback after startup succeeds.
-- On iOS, `BluetoothState.beaconing` is emitted immediately after `startAdvertising()`.
+- Calling `startAdvertising()` while a session is active safely replaces the current payload; an explicit stop is not required first.
+- On Android and iOS, `BluetoothState.beaconing` is emitted from the native callback only after startup succeeds.
+- Native advertising starts asynchronously. A return value of `0` means the request was accepted; listen to `bluetoothState` for `beaconing` or `error` to learn the result.
 
 #### `Future<int> stopAdvertising()`
 
 Stops iBeacon advertising.
+
+This operation is idempotent. Calling it when no start request or advertising
+session is active returns success without issuing another native stop.
 
 Return value:
 
@@ -235,6 +239,30 @@ await broadcaster.startAdvertising(
 await broadcaster.stopAdvertising();
 ```
 
+### Replace the active payload
+
+You can refresh the advertised beacon without stopping it first. Each start
+supersedes the previous session, including its pending callback and auto-stop
+timer:
+
+```dart
+await broadcaster.startAdvertising(
+  uuid: '550e8400-e29b-41d4-a716-446655440000',
+  major: 100,
+  minor: 1,
+  txPower: -59,
+  durationMs: 5000,
+);
+
+await broadcaster.startAdvertising(
+  uuid: '550e8400-e29b-41d4-a716-446655440000',
+  major: 100,
+  minor: 2,
+  txPower: -59,
+  durationMs: 5000,
+);
+```
+
 ### Validate beacon parameters before calling native code
 
 ```dart
@@ -306,8 +334,10 @@ You must request the required permissions in your app before advertising:
 Important platform behavior:
 
 - If `BLUETOOTH_ADVERTISE` is missing, the plugin emits `BluetoothState.unauthorized`.
-- On Android 12 and above, if `BLUETOOTH_CONNECT` is missing, `checkBluetoothState()` may still report `BluetoothState.ready`, but adapter state change broadcasts can still depend on connect permission.
-- If Bluetooth is off on Android 11 and below, advertising fails and the plugin emits `BluetoothState.off`.
+- On Android 12 and above, if `BLUETOOTH_CONNECT` is missing, the plugin can
+  still use its known advertising state but cannot reliably read whether the
+  adapter is powered on.
+- If Bluetooth is off and adapter state is readable, advertising fails and the plugin emits `BluetoothState.off`.
 
 ## iOS Configuration
 
@@ -316,28 +346,24 @@ and CocoaPods integration.
 
 ### Required `Info.plist` entries
 
-Add the following keys to `ios/Runner/Info.plist` in the host app:
+Add the following key to `ios/Runner/Info.plist` in the host app:
 
 ```xml
 <key>NSBluetoothAlwaysUsageDescription</key>
 <string>Bluetooth is required to broadcast iBeacon signals.</string>
-<key>NSBluetoothPeripheralUsageDescription</key>
-<string>Bluetooth is required to broadcast iBeacon signals.</string>
-<key>NSLocationWhenInUseUsageDescription</key>
-<string>Used to broadcast iBeacon signals while the app is in use.</string>
-<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-<string>Used to broadcast and monitor iBeacon signals.</string>
-<key>NSLocationAlwaysUsageDescription</key>
-<string>Used to broadcast iBeacon signals in the background.</string>
 ```
 
 Adjust the strings to match your app's real behavior.
 
 ### iOS permission notes
 
-- This plugin does not request Bluetooth or location permission dialogs for you.
-- You are responsible for requesting any required permissions in the host app.
+- This plugin does not request the Bluetooth permission dialog for you.
+- You are responsible for requesting Bluetooth permission in the host app.
 - The plugin uses `CBPeripheralManager` for Bluetooth state and `CLBeaconRegion` to build iBeacon payload data.
+- `NSBluetoothPeripheralUsageDescription` is deprecated and is not needed for
+  this plugin's iOS 15.0 minimum deployment target.
+- Broadcasting alone does not require Core Location authorization; add location
+  usage descriptions only if the host app also monitors or ranges beacons.
 
 ### iOS simulator behavior
 
@@ -373,7 +399,8 @@ The simulator does not perform real BLE beacon broadcasting.
 - Invalid `txPower`
 - Invalid Android advertising constants
 
-Native failures usually return `-1` or emit a new Bluetooth state such as:
+Synchronous native validation failures return `-1` or a platform exception.
+Asynchronous startup failures emit a new Bluetooth state such as:
 
 - `BluetoothState.unauthorized`
 - `BluetoothState.off`
@@ -427,4 +454,5 @@ class BeaconService {
 
 - The plugin does not request permissions automatically.
 - Android advertising parameters are Android-only.
+- iOS devices broadcast as iBeacons only while the host app remains in the foreground.
 - Real broadcasting cannot be validated on the iOS simulator.

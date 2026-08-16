@@ -53,7 +53,12 @@ public class BeaconBroadcasterPlugin: NSObject, FlutterPlugin, CBPeripheralManag
   private let bluetoothStateHandler = BluetoothStateStreamHandler()
   private let logHandler = LogStreamHandler()
   private let peripheralManager = CBPeripheralManager(delegate: nil, queue: nil)
-  private var isAdvertising = false
+  private var activeAdvertisingRequestID: UInt64?
+  private var nextAdvertisingRequestID: UInt64 = 0
+  // Core Bluetooth omits a request identifier from its start callback, so keep
+  // request order here to recognize callbacks from superseded starts.
+  private var pendingAdvertisingRequestIDs: [UInt64] = []
+  private var advertisingStarted = false
   private var lastBeaconRegion: CLBeaconRegion?
   private var autoStopWorkItem: DispatchWorkItem?
 
@@ -116,7 +121,7 @@ public class BeaconBroadcasterPlugin: NSObject, FlutterPlugin, CBPeripheralManag
   private func bluetoothState(for peripheralState: CBManagerState) -> BluetoothState {
     switch peripheralState {
     case .poweredOn:
-      return isAdvertising ? .beaconing : .ready
+      return advertisingStarted || peripheralManager.isAdvertising ? .beaconing : .ready
     case .poweredOff:
       return .off
     case .unauthorized:
@@ -201,39 +206,41 @@ public class BeaconBroadcasterPlugin: NSObject, FlutterPlugin, CBPeripheralManag
     }
 
     cancelAutoStop()
-    if isAdvertising {
-      peripheralManager.stopAdvertising()
-      isAdvertising = false
-    }
+    stopActiveAdvertising()
+    nextAdvertisingRequestID &+= 1
+    let requestID = nextAdvertisingRequestID
+    activeAdvertisingRequestID = requestID
+    advertisingStarted = false
+    pendingAdvertisingRequestIDs.append(requestID)
     peripheralManager.startAdvertising(peripheralData)
     lastBeaconRegion = region
-    isAdvertising = true
-    scheduleAutoStop(durationMs: durationMs)
-    bluetoothStateHandler.eventSink?(BluetoothState.beaconing.rawValue)
-    logHandler.eventSink?(["logLevel": "info", "message": "iBeacon advertising started."])
+    scheduleAutoStop(durationMs: durationMs, requestID: requestID)
     result(0)
   }
 
   private func stopAdvertising(result: @escaping FlutterResult) {
     cancelAutoStop()
-    peripheralManager.stopAdvertising()
-    isAdvertising = false
+    stopActiveAdvertising()
     updateBluetoothState()
     logHandler.eventSink?(["logLevel": "info", "message": "iBeacon advertising stopped."])
     result(0)
   }
 
-  private func scheduleAutoStop(durationMs: Int?) {
+  private func scheduleAutoStop(durationMs: Int?, requestID: UInt64) {
     cancelAutoStop()
     guard let durationMs, durationMs > 0 else {
       return
     }
 
     let workItem = DispatchWorkItem { [weak self] in
-      self?.peripheralManager.stopAdvertising()
-      self?.isAdvertising = false
-      self?.updateBluetoothState()
-      self?.logHandler.eventSink?(["logLevel": "info", "message": "iBeacon advertising stopped automatically."])
+      guard let self, self.activeAdvertisingRequestID == requestID else {
+        return
+      }
+      self.autoStopWorkItem = nil
+      if self.stopActiveAdvertising(expectedRequestID: requestID) {
+        self.updateBluetoothState()
+        self.logHandler.eventSink?(["logLevel": "info", "message": "iBeacon advertising stopped automatically."])
+      }
     }
     autoStopWorkItem = workItem
     DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(durationMs), execute: workItem)
@@ -244,7 +251,62 @@ public class BeaconBroadcasterPlugin: NSObject, FlutterPlugin, CBPeripheralManag
     autoStopWorkItem = nil
   }
 
+  @discardableResult
+  private func stopActiveAdvertising(expectedRequestID: UInt64? = nil) -> Bool {
+    if let expectedRequestID, activeAdvertisingRequestID != expectedRequestID {
+      return false
+    }
+
+    guard activeAdvertisingRequestID != nil || peripheralManager.isAdvertising else {
+      return false
+    }
+
+    activeAdvertisingRequestID = nil
+    advertisingStarted = false
+    peripheralManager.stopAdvertising()
+    return true
+  }
+
+  public func peripheralManagerDidStartAdvertising(_ peripheral: CBPeripheralManager, error: Error?) {
+    guard !pendingAdvertisingRequestIDs.isEmpty else {
+      if activeAdvertisingRequestID == nil && peripheral.isAdvertising {
+        peripheral.stopAdvertising()
+      }
+      return
+    }
+
+    let completedRequestID = pendingAdvertisingRequestIDs.removeFirst()
+    guard activeAdvertisingRequestID == completedRequestID else {
+      if activeAdvertisingRequestID == nil && peripheral.isAdvertising {
+        peripheral.stopAdvertising()
+      }
+      return
+    }
+
+    if let error {
+      activeAdvertisingRequestID = nil
+      advertisingStarted = false
+      cancelAutoStop()
+      if peripheral.isAdvertising {
+        peripheral.stopAdvertising()
+      }
+      bluetoothStateHandler.eventSink?(BluetoothState.error.rawValue)
+      logHandler.eventSink?(["logLevel": "error", "message": "Failed to start iBeacon advertising: \(error.localizedDescription)"])
+      return
+    }
+
+    advertisingStarted = true
+    bluetoothStateHandler.eventSink?(BluetoothState.beaconing.rawValue)
+    logHandler.eventSink?(["logLevel": "info", "message": "iBeacon advertising started."])
+  }
+
   public func peripheralManagerDidUpdateState(_ peripheral: CBPeripheralManager) {
+    if peripheral.state != .poweredOn {
+      activeAdvertisingRequestID = nil
+      pendingAdvertisingRequestIDs.removeAll()
+      advertisingStarted = false
+      cancelAutoStop()
+    }
     emitBluetoothState()
   }
 }

@@ -159,7 +159,7 @@ void main() {
         await Future<void>.delayed(Duration.zero);
       },
       zoneSpecification: ZoneSpecification(
-        print: (_, __, ___, String line) {
+        print: (_, _, _, String line) {
           printedMessages.add(line);
         },
       ),

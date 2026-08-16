@@ -77,7 +77,7 @@ class _BeaconItemState extends ConsumerState<BeaconItem> {
     final isBeaconing = bluetoothState.when(
       data: (value) => value == BluetoothState.beaconing,
       loading: () => false,
-      error: (_, __) => false,
+      error: (_, _) => false,
     );
     final isTogglePressed =
         activeBeaconId == widget.beacon.id && isBeaconing;

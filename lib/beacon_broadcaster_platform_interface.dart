@@ -50,7 +50,7 @@ abstract class BeaconBroadcasterPlatform extends PlatformInterface {
     throw UnimplementedError('initializeLogger() has not been implemented.');
   }
 
-  /// Starts a platform-specific iBeacon advertising session.
+  /// Starts or replaces a platform-specific iBeacon advertising session.
   Future<int> startAdvertising(
       {required Uint8List uuid,
       required int major,
@@ -62,7 +62,7 @@ abstract class BeaconBroadcasterPlatform extends PlatformInterface {
     throw UnimplementedError('startAdvertising() has not been implemented.');
   }
 
-  /// Stops the active platform-specific advertising session.
+  /// Idempotently stops the active platform-specific advertising session.
   Future<int> stopAdvertising() {
     throw UnimplementedError('stopAdvertising() has not been implemented.');
   }
